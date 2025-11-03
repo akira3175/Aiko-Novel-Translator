@@ -1,0 +1,338 @@
+{% extends "core/base.html" %}
+
+{% block title %}Import YAML - Novel Translator{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-container {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+    
+    .page-subtitle {
+        color: var(--text-light);
+        font-size: 1.1rem;
+    }
+    
+    .upload-card {
+        background: white;
+        border: 3px dashed var(--border);
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .upload-card:hover {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .upload-card.dragover {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+        transform: scale(1.02);
+    }
+    
+    .upload-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.7;
+    }
+    
+    .upload-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-subtitle {
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+    }
+    
+    #fileInput {
+        display: none;
+    }
+    
+    .file-info {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        display: none;
+    }
+    
+    .file-info.show {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .file-details {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .file-icon {
+        font-size: 2rem;
+    }
+    
+    .file-name {
+        font-weight: 600;
+        color: var(--dark);
+    }
+    
+    .file-size {
+        font-size: 0.85rem;
+        color: var(--text-light);
+    }
+    
+    .remove-file {
+        background: var(--danger);
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    
+    .remove-file:hover {
+        transform: scale(1.1);
+    }
+    
+    .submit-button {
+        width: 100%;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .alert {
+        padding: 1.25rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 2px solid #10b981;
+    }
+    
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 2px solid #ef4444;
+    }
+    
+    .alert-icon {
+        font-size: 1.5rem;
+    }
+    
+    .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 3rem;
+    }
+    
+    .feature {
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--light);
+        border-radius: 12px;
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .feature-title {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .feature-desc {
+        font-size: 0.9rem;
+        color: var(--text-light);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="import-container">
+    {% if success %}
+    <div class="alert alert-success">
+        <span class="alert-icon">✅</span>
+        <span>{{ success }}</span>
+    </div>
+    {% elif error %}
+    <div class="alert alert-error">
+        <span class="alert-icon">⚠️</span>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+    
+    <div class="page-header">
+        <h1 class="page-title">
+            <span>📂</span>
+            Import YAML
+        </h1>
+        <p class="page-subtitle">Tải lên file YAML chứa nội dung novel</p>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+        <div class="upload-card" id="uploadCard" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📄</div>
+            <div class="upload-title">Kéo thả file vào đây</div>
+            <div class="upload-subtitle">hoặc nhấn để chọn file</div>
+            <div style="color: var(--text-light); font-size: 0.9rem;">
+                Hỗ trợ: .yaml, .yml
+            </div>
+            <input 
+                type="file" 
+                name="file" 
+                id="fileInput" 
+                accept=".yaml,.yml" 
+                required
+                onchange="handleFileSelect(event)"
+            >
+        </div>
+        
+        <div class="file-info" id="fileInfo">
+            <div class="file-details">
+                <span class="file-icon">📄</span>
+                <div>
+                    <div class="file-name" id="fileName"></div>
+                    <div class="file-size" id="fileSize"></div>
+                </div>
+            </div>
+            <button type="button" class="remove-file" onclick="removeFile()">×</button>
+        </div>
+        
+        <button type="submit" class="btn btn-primary submit-button" id="submitBtn">
+            📤 Tải lên và Import
+        </button>
+    </form>
+    
+    <div class="features">
+        <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-title">Nhanh chóng</div>
+            <div class="feature-desc">Import hàng trăm chương trong vài giây</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🎯</div>
+            <div class="feature-title">Chính xác</div>
+            <div class="feature-desc">Tự động phân tích cấu trúc YAML</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">📊</div>
+            <div class="feature-title">Tự động</div>
+            <div class="feature-desc">Tạo volumes và chapters tự động</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const uploadCard = document.getElementById('uploadCard');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const submitBtn = document.getElementById('submitBtn');
+
+// Drag and drop
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadCard.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    uploadCard.addEventListener(eventName, () => {
+        uploadCard.classList.add('dragover');
+    });
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    uploadCard.addEventListener(eventName, () => {
+        uploadCard.classList.remove('dragover');
+    });
+});
+
+uploadCard.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length) {
+        fileInput.files = files;
+        handleFileSelect({ target: { files: files } });
+    }
+});
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        fileInfo.classList.add('show');
+        uploadCard.style.borderColor = 'var(--success)';
+        uploadCard.style.background = 'rgba(16, 185, 129, 0.05)';
+    }
+}
+
+function removeFile() {
+    fileInput.value = '';
+    fileInfo.classList.remove('show');
+    uploadCard.style.borderColor = 'var(--border)';
+    uploadCard.style.background = 'white';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Form submit handling
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading"></span> Đang xử lý...';
+});
+</script>
+{% endblock %}

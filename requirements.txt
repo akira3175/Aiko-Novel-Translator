@@ -1,0 +1,8 @@
+Django>=4.2
+PyYAML
+requests
+# Nếu dùng Celery + Redis (nên dùng cho tác vụ nền)
+celery
+redis
+# Nếu bạn dùng OpenAI native client thay cho google.genai
+openai

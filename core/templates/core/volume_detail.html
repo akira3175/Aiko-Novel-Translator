@@ -1,0 +1,191 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ volume.novel.title }} - Volume {{ volume.index }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+    
+    .breadcrumb a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+    
+    .volume-header {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid var(--primary);
+    }
+    
+    .volume-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .volume-subtitle {
+        font-size: 1.1rem;
+        color: var(--text-light);
+    }
+    
+    .chapters-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+    
+    .chapter-item {
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        padding: 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .chapter-item:hover {
+        border-color: var(--primary);
+        box-shadow: 0 4px 8px rgba(99, 102, 241, 0.15);
+        transform: translateX(8px);
+    }
+    
+    .chapter-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+    
+    .chapter-number {
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    
+    .chapter-title {
+        color: var(--dark);
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .chapter-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .status-translated {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-pending {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .score-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+    
+    .score-high {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .score-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .score-low {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/">Dashboard</a>
+    <span>/</span>
+    <a href="{% url 'core:novel_detail' volume.novel.id %}">{{ volume.novel.title }}</a>
+    <span>/</span>
+    <span>Volume {{ volume.index }}</span>
+</div>
+
+<div class="volume-header">
+    <h1 class="volume-title">
+        📚 Volume {{ volume.index }}
+    </h1>
+    <div class="volume-subtitle">{{ volume.title|default:"Untitled" }}</div>
+    <div style="margin-top: 1rem; color: var(--text-light);">
+        <strong>{{ volume.chapters.count }}</strong> chapters
+    </div>
+</div>
+
+<div class="chapters-list">
+    {% for chapter in volume.chapters.all %}
+    <a href="{% url 'core:chapter_detail' chapter.id %}" style="text-decoration: none;">
+        <div class="chapter-item">
+            <div class="chapter-info">
+                <div class="chapter-number">{{ chapter.index }}</div>
+                <div class="chapter-title">
+                    {{ chapter.title_translation|default:chapter.title|truncatewords:15 }}
+                </div>
+            </div>
+            <div class="chapter-meta">
+                {% if chapter.translation %}
+                    <span class="status-badge status-translated">✓ Đã dịch</span>
+                {% else %}
+                    <span class="status-badge status-pending">⏳ Chưa dịch</span>
+                {% endif %}
+                
+                {% if chapter.match_percent > 0 %}
+                    {% if chapter.match_percent >= 80 %}
+                        <span class="score-badge score-high">{{ chapter.match_percent|floatformat:0 }}%</span>
+                    {% elif chapter.match_percent >= 60 %}
+                        <span class="score-badge score-medium">{{ chapter.match_percent|floatformat:0 }}%</span>
+                    {% else %}
+                        <span class="score-badge score-low">{{ chapter.match_percent|floatformat:0 }}%</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div style="text-align: center; padding: 3rem; background: var(--light); border-radius: 12px;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
+        <div style="color: var(--text-light);">Chưa có chương nào</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

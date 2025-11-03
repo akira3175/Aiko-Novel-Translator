@@ -1,0 +1,171 @@
+{% extends 'core/base.html' %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .novels-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .novel-card {
+        background: white;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        padding: 1.5rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .novel-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        transform: scaleX(0);
+        transition: transform 0.3s;
+    }
+    
+    .novel-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+        transform: translateY(-4px);
+    }
+    
+    .novel-card:hover::before {
+        transform: scaleX(1);
+    }
+    
+    .novel-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .novel-author {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .novel-meta {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-light);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .empty-text {
+        color: var(--text-light);
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <span>📚</span>
+        Danh sách Novels
+    </h1>
+    <a href="{% url 'core:import_yaml' %}" class="btn btn-primary">
+        <span>📂</span>
+        Import YAML
+    </a>
+</div>
+
+{% if novels %}
+<div class="novels-grid">
+    {% for novel in novels %}
+    <a href="{% url 'core:novel_detail' novel.id %}" style="text-decoration: none;">
+        <div class="novel-card">
+            <div class="novel-title">
+                <span>📖</span>
+                {{ novel.title }}
+            </div>
+            <div class="novel-author">
+                <span>✍️</span>
+                {{ novel.author|default:"Unknown Author" }}
+            </div>
+            {% if novel.description %}
+            <div style="color: var(--text-light); font-size: 0.9rem; line-height: 1.5;">
+                {{ novel.description|truncatewords:20 }}
+            </div>
+            {% endif %}
+            <div class="novel-meta">
+                <div class="meta-item">
+                    <span>📚</span>
+                    {{ novel.volumes.count }} Volumes
+                </div>
+                <div class="meta-item">
+                    <span>🌐</span>
+                    {{ novel.language|upper }}
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📚</div>
+    <div class="empty-text">Chưa có novel nào</div>
+    <a href="{% url 'core:import_yaml' %}" class="btn btn-primary">
+        <span>📂</span>
+        Import Novel đầu tiên
+    </a>
+</div>
+{% endif %}
+{% endblock %}

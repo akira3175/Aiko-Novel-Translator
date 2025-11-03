@@ -1,0 +1,63 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# Django specific
+db.sqlite3
+media/
+staticfiles/
+*.log
+
+# Local settings or secrets
+.env
+*.env
+*.secret
+secrets.json
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# System files
+.DS_Store
+Thumbs.db
+
+# PyCharm project files
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Compiled files
+*.mo
+*.pot
+
+# Coverage / Test
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+test-results/
+
+# Migrations (optional – nếu bạn muốn Git bỏ qua migrations ban đầu)
+# **Chú ý: chỉ dùng nếu bạn muốn tự tạo lại migration khi deploy**
+# */migrations/
+# !*/migrations/__init__.py

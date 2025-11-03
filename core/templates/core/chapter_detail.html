@@ -1,0 +1,653 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ chapter.title_translation|default:chapter.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        flex-wrap: wrap;
+    }
+    
+    .breadcrumb a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+    
+    .chapter-header {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid var(--primary);
+    }
+    
+    .chapter-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 1rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .progress-section {
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 30px;
+        background: var(--light);
+        border-radius: 15px;
+        overflow: hidden;
+        position: relative;
+        margin: 1rem 0;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #059669);
+        transition: width 0.5s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+    
+    .progress-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 0.75rem;
+    }
+    
+    .stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-light);
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    .quality-score {
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .score-display {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .score-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+    }
+    
+    .score-high {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+    
+    .score-medium {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    
+    .score-low {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+    
+    .segments-section {
+        margin-top: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .segment-card {
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s;
+    }
+    
+    .segment-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+    }
+    
+    .segment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--light);
+    }
+    
+    .segment-title {
+        font-weight: 700;
+        color: var(--dark);
+        font-size: 1.1rem;
+    }
+    
+    .badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .badge-success {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .badge-pending {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    
+    .badge-score {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .content-block {
+        margin-bottom: 1.5rem;
+    }
+    
+    .content-label {
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .content-text {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.8;
+        color: var(--text);
+    }
+    
+    .review-box {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
+        border: 2px solid #f59e0b;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .review-label {
+        font-weight: 700;
+        color: #92400e;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: var(--light);
+        border-radius: 12px;
+        color: var(--text-light);
+    }
+    
+    /* Review AI Section */
+    .review-ai-section {
+        background: white;
+        border: 2px solid var(--warning);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .review-ai-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .segment-reviews {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .segment-review-item {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+        border-left: 4px solid var(--warning);
+    }
+    
+    .segment-review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .progress-stats {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .score-display {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/">Dashboard</a>
+    <span>/</span>
+    <a href="{% url 'core:novel_detail' chapter.volume.novel.id %}">{{ chapter.volume.novel.title }}</a>
+    <span>/</span>
+    <a href="{% url 'core:volume_detail' chapter.volume.id %}">Volume {{ chapter.volume.index }}</a>
+    <span>/</span>
+    <span>Chapter {{ chapter.index }}</span>
+</div>
+
+<div class="chapter-header">
+    <h1 class="chapter-title">
+        📖 {{ chapter.title_translation|default:chapter.title }}
+    </h1>
+    <div class="action-buttons">
+        <button onclick="prepareChapter()" class="btn btn-primary" id="prepareBtn">
+            🔧 Chia Segments
+        </button>
+        <button onclick="translateChapter()" class="btn btn-success" id="translateBtn">
+            🌐 Dịch Toàn Bộ
+        </button>
+        <button onclick="reviewChapterAI()" class="btn btn-warning" id="reviewBtn">
+            🧐 Review AI
+        </button>
+    </div>
+</div>
+
+{% if progress %}
+<div class="progress-section">
+    <h3 style="margin-bottom: 1rem; color: var(--dark);">📊 Tiến độ dịch</h3>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ progress.progress_percent }}%">
+            {{ progress.progress_percent|floatformat:0 }}%
+        </div>
+    </div>
+    <div class="progress-stats">
+        <div class="stat">
+            <span class="stat-label">Tổng segments</span>
+            <span class="stat-value">{{ progress.total }}</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Đã dịch</span>
+            <span class="stat-value" style="color: var(--success);">{{ progress.translated }}</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Còn lại</span>
+            <span class="stat-value" style="color: var(--warning);">{{ progress.remaining }}</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if chapter.match_percent %}
+<div class="quality-score">
+    <h3 style="margin-bottom: 1rem; color: var(--dark);">🎯 Chất lượng dịch</h3>
+    <div class="score-display">
+        {% if chapter.match_percent >= 80 %}
+            <div class="score-circle score-high">{{ chapter.match_percent|floatformat:0 }}%</div>
+            <div>
+                <div style="font-weight: 700; color: #065f46; font-size: 1.1rem;">✅ Rất chính xác</div>
+                <div style="color: var(--text-light); margin-top: 0.25rem;">Bản dịch đạt chất lượng cao</div>
+            </div>
+        {% elif chapter.match_percent >= 50 %}
+            <div class="score-circle score-medium">{{ chapter.match_percent|floatformat:0 }}%</div>
+            <div>
+                <div style="font-weight: 700; color: #92400e; font-size: 1.1rem;">⚠️ Tạm ổn</div>
+                <div style="color: var(--text-light); margin-top: 0.25rem;">Cần xem xét một số đoạn</div>
+            </div>
+        {% else %}
+            <div class="score-circle score-low">{{ chapter.match_percent|floatformat:0 }}%</div>
+            <div>
+                <div style="font-weight: 700; color: #991b1b; font-size: 1.1rem;">❌ Cần chỉnh sửa</div>
+                <div style="color: var(--text-light); margin-top: 0.25rem;">Bản dịch cần cải thiện</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Review AI Results Section -->
+<div class="review-ai-section" id="reviewAISection" style="display: none;">
+    <div class="review-ai-header">
+        <h3 style="color: var(--dark);">🔍 Kết quả Review AI</h3>
+        <button onclick="toggleReviewDetails()" class="btn btn-secondary btn-sm">
+            <span id="toggleIcon">▼</span> Chi tiết
+        </button>
+    </div>
+    <div class="segment-reviews" id="segmentReviews" style="display: none;">
+        <!-- Segment reviews will be inserted here -->
+    </div>
+</div>
+
+<div class="segments-section">
+    <h2 class="section-title">
+        📝 Segments ({{ segments.count }})
+    </h2>
+    
+    {% for segment in segments %}
+    <div class="segment-card" id="segment-{{ segment.id }}">
+        <div class="segment-header">
+            <span class="segment-title">Segment {{ segment.index }}</span>
+            <div class="badges">
+                {% if segment.translation %}
+                    <span class="badge badge-success">✓ Đã dịch</span>
+                {% else %}
+                    <span class="badge badge-pending">⏳ Chưa dịch</span>
+                {% endif %}
+                {% if segment.match_percent %}
+                    <span class="badge badge-score">{{ segment.match_percent|floatformat:0 }}%</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="content-block">
+            <div class="content-label">🌏 Nguyên văn</div>
+            <div class="content-text">{{ segment.content_raw }}</div>
+        </div>
+        
+        {% if segment.translation %}
+        <div class="content-block">
+            <div class="content-label">🇻🇳 Bản dịch</div>
+            <div class="content-text">{{ segment.translation }}</div>
+        </div>
+        {% else %}
+        <button onclick="translateSegment({{ segment.id }})" class="btn btn-primary">
+            🌐 Dịch segment này
+        </button>
+        {% endif %}
+        
+        {% if segment.review %}
+        <div class="review-box">
+            <div class="review-label">💬 Review AI</div>
+            <div style="white-space: pre-line; line-height: 1.6; color: var(--text);">{{ segment.review }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
+        <div>Chưa có segments. Nhấn "Chia Segments" để bắt đầu.</div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+const chapterId = {{ chapter.id }};
+
+function getCookie(name) {
+    let value = "; " + document.cookie;
+    let parts = value.split("; " + name + "=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
+async function prepareChapter() {
+    const btn = document.getElementById('prepareBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang chia...';
+    
+    try {
+        const response = await fetch(`/chapter/${chapterId}/prepare/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        const data = await response.json();
+        
+        if (data.ok) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🔧 Chia Segments';
+    }
+}
+
+async function translateSegment(segmentId) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang dịch...';
+    
+    try {
+        const response = await fetch(`/segment/${segmentId}/translate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        const data = await response.json();
+        
+        if (data.ok) {
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+            btn.disabled = false;
+            btn.innerHTML = '🌐 Dịch segment này';
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+        btn.disabled = false;
+        btn.innerHTML = '🌐 Dịch segment này';
+    }
+}
+
+async function translateChapter() {
+    const btn = document.getElementById('translateBtn');
+    if (!confirm('Dịch toàn bộ chapter? Quá trình này có thể mất vài phút.')) {
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang dịch...';
+    
+    try {
+        const response = await fetch(`/chapter/${chapterId}/translate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        const data = await response.json();
+        
+        if (data.ok) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🌐 Dịch Toàn Bộ';
+    }
+}
+
+async function reviewChapterAI() {
+    const btn = document.getElementById('reviewBtn');
+    if (!confirm('Review AI chất lượng dịch? Quá trình này sẽ đánh giá từng segment.')) {
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang review...';
+    
+    try {
+        const response = await fetch(`/chapter/${chapterId}/review/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        
+        if (response.ok) {
+            // Load review results
+            await loadReviewResults();
+            alert('✅ Review hoàn tất!');
+            location.reload();
+        } else {
+            alert('Lỗi khi review');
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🧐 Review AI';
+    }
+}
+
+async function loadReviewResults() {
+    try {
+        const response = await fetch(`/chapter/${chapterId}/review/results/`);
+        const data = await response.json();
+        
+        if (data.ok && data.segments && data.segments.length > 0) {
+            const section = document.getElementById('reviewAISection');
+            const container = document.getElementById('segmentReviews');
+            
+            section.style.display = 'block';
+            
+            let html = '';
+            data.segments.forEach(seg => {
+                const scoreClass = seg.match_percent >= 80 ? 'badge-success' : 
+                                 seg.match_percent >= 60 ? 'badge-score' : 'badge-pending';
+                html += `
+                    <div class="segment-review-item">
+                        <div class="segment-review-header">
+                            <strong>Segment ${seg.index}</strong>
+                            <span class="badge ${scoreClass}">${seg.match_percent.toFixed(1)}%</span>
+                        </div>
+                        <div style="color: var(--text); line-height: 1.6; white-space: pre-line; font-size: 0.9rem;">
+                            ${seg.review || 'Không có nhận xét'}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading review results:', error);
+    }
+}
+
+function toggleReviewDetails() {
+    const container = document.getElementById('segmentReviews');
+    const icon = document.getElementById('toggleIcon');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'grid';
+        icon.textContent = '▲';
+    } else {
+        container.style.display = 'none';
+        icon.textContent = '▼';
+    }
+}
+
+// Load review results on page load if exists
+document.addEventListener('DOMContentLoaded', function() {
+    {% if chapter.match_percent %}
+    loadReviewResults();
+    {% endif %}
+});
+</script>
+{% endblock %}

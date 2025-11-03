@@ -1,0 +1,569 @@
+{% extends 'core/base.html' %}
+
+{% load custom_filters %}
+
+{% block title %}Glossary - {{ novel.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+    
+    .breadcrumb a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+    
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    /* Dropdown menu */
+    .dropdown {
+        position: relative;
+    }
+    
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 0.5rem;
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        min-width: 200px;
+        z-index: 1000;
+    }
+    
+    .dropdown-item {
+        display: block;
+        padding: 0.75rem 1rem;
+        color: var(--text);
+        text-decoration: none;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .dropdown-item:hover {
+        background: var(--light);
+    }
+    
+    .dropdown-item:not(:last-child) {
+        border-bottom: 1px solid var(--light);
+    }
+    
+    /* Improved pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+    
+    .page-link {
+        padding: 0.625rem 1rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 500;
+        transition: all 0.2s;
+        background: white;
+        min-width: 40px;
+        text-align: center;
+    }
+    
+    .page-link:hover:not(.active):not(.disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+        transform: translateY(-2px);
+    }
+    
+    .page-link.active {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+    
+    .page-link.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .page-ellipsis {
+        padding: 0.625rem 0.5rem;
+        color: var(--text-light);
+    }
+    
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal.show {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 500px;
+        width: 90%;
+    }
+    
+    .modal-header {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+    
+    .file-upload {
+        border: 2px dashed var(--border);
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .file-upload:hover {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .file-upload input[type="file"] {
+        display: none;
+    }
+    
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/">Dashboard</a>
+    <span>/</span>
+    <a href="{% url 'core:novel_detail' novel.id %}">{{ novel.title }}</a>
+    <span>/</span>
+    <span>Glossary</span>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">
+        <span>📖</span>
+        Glossary
+    </h1>
+    <div class="header-actions">
+        <button onclick="showAddModal()" class="btn btn-primary">
+            ➕ Thêm Term
+        </button>
+        <button onclick="generateGlossary()" class="btn btn-success" id="generateBtn">
+            🤖 Tạo Tự Động
+        </button>
+        <div class="dropdown">
+            <button class="btn btn-secondary" onclick="toggleDropdown(event)">
+                📥 Export/Import ▼
+            </button>
+            <div class="dropdown-menu" id="exportDropdown">
+                <a href="{% url 'core:export_glossary_txt' novel.id %}" class="dropdown-item">
+                    📄 Export TXT
+                </a>
+                <button onclick="showImportModal()" class="dropdown-item">
+                    📤 Import TXT
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_terms }}</div>
+        <div class="stat-label">Tổng số terms</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ checkpoint }}</div>
+        <div class="stat-label">Checkpoint (chapter)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">~{{ checkpoint|multiply:3000 }}</div>
+        <div class="stat-label">Từ đã xử lý</div>
+    </div>
+</div>
+
+<div class="action-bar">
+    <div class="search-box">
+        <input 
+            type="text" 
+            class="search-input" 
+            placeholder="🔍 Tìm kiếm term..." 
+            id="searchInput"
+            onkeyup="searchTerms()"
+        >
+    </div>
+    <button onclick="resetCheckpoint()" class="btn btn-warning">
+        🔄 Reset Checkpoint
+    </button>
+</div>
+
+<div class="glossary-table">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Tiếng Trung</th>
+                <th style="width: 25%;">Tiếng Việt</th>
+                <th style="width: 40%;">Ghi chú</th>
+                <th style="width: 10%;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody id="glossaryTableBody">
+            {% for term in page_obj %}
+            <tr data-search="{{ term.term_cn|lower }} {{ term.term_vi|lower }}">
+                <td class="term-cn">{{ term.term_cn }}</td>
+                <td class="term-vi">{{ term.term_vi }}</td>
+                <td class="term-note">{{ term.note|default:"—" }}</td>
+                <td>
+                    <form method="post" action="{% url 'core:delete_glossary_term' term.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button 
+                            type="submit" 
+                            class="btn-delete"
+                            onclick="return confirm('Xóa term này?')"
+                        >
+                            🗑️
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-light);">
+                    Chưa có glossary. Nhấn "Tạo Tự Động" để bắt đầu.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+        <a href="?page=1" class="page-link" title="Trang đầu">⏮️</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">← Trước</a>
+    {% else %}
+        <span class="page-link disabled">⏮️</span>
+        <span class="page-link disabled">← Trước</span>
+    {% endif %}
+    
+    {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+            <span class="page-link active">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+        {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+            <span class="page-ellipsis">...</span>
+        {% endif %}
+    {% endfor %}
+    
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-link">Sau →</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link" title="Trang cuối">⏭️</a>
+    {% else %}
+        <span class="page-link disabled">Sau →</span>
+        <span class="page-link disabled">⏭️</span>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Add Term Modal -->
+<div class="modal" id="addModal">
+    <div class="modal-content">
+        <h2 class="modal-header">➕ Thêm Term Mới</h2>
+        <form method="post" action="{% url 'core:add_glossary_term' novel.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Tiếng Trung *</label>
+                <input type="text" name="term_cn" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tiếng Việt *</label>
+                <input type="text" name="term_vi" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Ghi chú</label>
+                <input type="text" name="note" class="form-input">
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">💾 Lưu</button>
+                <button type="button" class="btn btn-secondary" onclick="hideAddModal()" style="flex: 1;">❌ Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal" id="importModal">
+    <div class="modal-content">
+        <h2 class="modal-header">📤 Import Glossary</h2>
+        <form id="importForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Chọn file TXT</label>
+                <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+                    <div style="color: var(--text-light);">Click để chọn file</div>
+                    <div id="fileName" style="color: var(--primary); margin-top: 0.5rem; font-weight: 600;"></div>
+                    <input type="file" id="fileInput" name="file" accept=".txt" onchange="updateFileName()">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="importGlossary()" class="btn btn-primary" style="flex: 1;">📤 Import</button>
+                <button type="button" class="btn btn-secondary" onclick="hideImportModal()" style="flex: 1;">❌ Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const novelId = {{ novel.id }};
+
+function getCookie(name) {
+    let value = "; " + document.cookie;
+    let parts = value.split("; " + name + "=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
+// Dropdown toggle
+function toggleDropdown(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('exportDropdown');
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function() {
+    document.getElementById('exportDropdown').style.display = 'none';
+});
+
+// Modal functions
+function showAddModal() {
+    document.getElementById('addModal').classList.add('show');
+}
+
+function hideAddModal() {
+    document.getElementById('addModal').classList.remove('show');
+}
+
+function showImportModal() {
+    document.getElementById('importModal').classList.add('show');
+    document.getElementById('exportDropdown').style.display = 'none';
+}
+
+function hideImportModal() {
+    document.getElementById('importModal').classList.remove('show');
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fileName').textContent = '';
+}
+
+function updateFileName() {
+    const input = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    fileName.textContent = input.files[0] ? input.files[0].name : '';
+}
+
+async function importGlossary() {
+    const fileInput = document.getElementById('fileInput');
+    
+    if (!fileInput.files[0]) {
+        alert('Vui lòng chọn file!');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    try {
+        const response = await fetch(`/novel/${novelId}/glossary/import/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+            alert(`✅ ${data.message}`);
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    }
+}
+
+async function generateGlossary() {
+    const btn = document.getElementById('generateBtn');
+    if (!confirm('Tạo glossary tự động? Quá trình này có thể mất vài phút.')) {
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang tạo...';
+    
+    try {
+        const response = await fetch(`/novel/${novelId}/glossary/generate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: new URLSearchParams({
+                'from_checkpoint': 'true'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+            const summary = data.summary;
+            alert(`✅ Hoàn tất!\n\n` +
+                  `📊 Đã xử lý: ${summary.processed_chapters} chapters\n` +
+                  `➕ Terms mới: ${summary.new_terms}\n` +
+                  `📖 Tổng terms: ${summary.total_terms}\n` +
+                  `📍 Checkpoint: ${summary.checkpoint}`);
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🤖 Tạo Tự Động';
+    }
+}
+
+async function resetCheckpoint() {
+    if (!confirm('Reset checkpoint về 0? Lần tạo glossary tiếp theo sẽ xử lý từ đầu.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/novel/${novelId}/glossary/reset/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        
+        const data = await response.json();
+        if (data.ok) {
+            alert('✅ Đã reset checkpoint!');
+            location.reload();
+        }
+    } catch (error) {
+        alert('Lỗi: ' + error);
+    }
+}
+
+function searchTerms() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const rows = document.querySelectorAll('#glossaryTableBody tr');
+    
+    rows.forEach(row => {
+        const searchText = row.getAttribute('data-search');
+        if (searchText && searchText.includes(filter)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Close modals when clicking outside
+document.getElementById('addModal').addEventListener('click', function(e) {
+    if (e.target === this) hideAddModal();
+});
+
+document.getElementById('importModal').addEventListener('click', function(e) {
+    if (e.target === this) hideImportModal();
+});
+</script>
+{% endblock %}
