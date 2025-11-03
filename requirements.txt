@@ -11,3 +11,5 @@ google-genai
 genai
 
 PyYAML
+
+gunicorn
