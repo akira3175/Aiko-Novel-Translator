@@ -54,6 +54,11 @@ class Chapter(models.Model):
     status = models.CharField(max_length=32, default='imported')
     review = models.TextField(blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
+    foreign_char_warning = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text='Tổng hợp cảnh báo ký tự ngoại ngữ từ tất cả segments'
+    )
 
     class Meta:
         unique_together = ('volume', 'index')
@@ -71,6 +76,11 @@ class Segment(models.Model):
     match_percent = models.FloatField(default=0)
     review = models.TextField(blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
+    foreign_char_warning = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text='Cảnh báo ký tự ngoại ngữ trong bản dịch segment này'
+    )
 
     class Meta:
         unique_together = ('chapter', 'index')

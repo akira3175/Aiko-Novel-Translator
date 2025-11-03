@@ -39,6 +39,105 @@
         flex-wrap: wrap;
     }
     
+    /* Foreign character warning styles */
+    .foreign-warning {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+        border: 2px solid #ef4444;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .foreign-warning-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .foreign-warning-icon {
+        font-size: 2rem;
+    }
+    
+    .foreign-warning-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #991b1b;
+    }
+    
+    .foreign-warning-content {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        white-space: pre-line;
+        line-height: 1.8;
+        color: #374151;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .retranslate-hint {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background: #fef3c7;
+        border-radius: 8px;
+        color: #92400e;
+        font-size: 0.9rem;
+    }
+    
+    /* Highlighted foreign chars trong content */
+    mark {
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 600;
+    }
+    
+    /* Button styles for retranslate */
+    .btn-retranslate {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+    
+    .btn-retranslate:hover {
+        background: linear-gradient(135deg, #d97706, #b45309);
+    }
+    
+    /* Translation display */
+    .translation-display {
+        position: relative;
+    }
+    
+    .foreign-char-legend {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        padding: 0.75rem;
+        background: var(--light);
+        border-radius: 8px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text);
+    }
+    
+    .legend-box {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        display: inline-block;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .legend-chinese { background: #fee2e2; }
+    .legend-korean { background: #fef3c7; }
+    .legend-japanese { background: #d1fae5; }
+    .legend-thai { background: #e9d5ff; }
+    
     .progress-section {
         background: white;
         border: 2px solid var(--border);
@@ -160,6 +259,10 @@
         box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
     }
     
+    .segment-card[data-has-warning="true"] {
+        border-left: 4px solid #ef4444;
+    }
+    
     .segment-header {
         display: flex;
         justify-content: space-between;
@@ -201,6 +304,11 @@
     .badge-score {
         background: #fef3c7;
         color: #92400e;
+    }
+    
+    .badge-warning {
+        background: #fee2e2;
+        color: #991b1b;
     }
     
     .content-block {
@@ -267,42 +375,6 @@
         color: var(--text-light);
     }
     
-    /* Review AI Section */
-    .review-ai-section {
-        background: white;
-        border: 2px solid var(--warning);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .review-ai-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-    
-    .segment-reviews {
-        display: grid;
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-    
-    .segment-review-item {
-        background: var(--light);
-        border-radius: 8px;
-        padding: 1rem;
-        border-left: 4px solid var(--warning);
-    }
-    
-    .segment-review-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-    }
-    
     @media (max-width: 768px) {
         .action-buttons {
             flex-direction: column;
@@ -331,6 +403,23 @@
     <span>Chapter {{ chapter.index }}</span>
 </div>
 
+<!-- Foreign Character Warning Section -->
+{% if chapter.foreign_char_warning %}
+<div class="foreign-warning">
+    <div class="foreign-warning-header">
+        <span class="foreign-warning-icon">🚨</span>
+        <div>
+            <div class="foreign-warning-title">Phát hiện ký tự ngoại ngữ trong bản dịch!</div>
+            <div style="color: #dc2626; font-size: 0.9rem;">Vui lòng kiểm tra và xem xét dịch lại</div>
+        </div>
+    </div>
+    <div class="foreign-warning-content">{{ chapter.foreign_char_warning }}</div>
+    <div class="retranslate-hint">
+        💡 <strong>Gợi ý:</strong> Nhấn nút "🔄 Dịch lại" bên dưới để dịch lại chapter hoặc dịch lại từng segment có vấn đề.
+    </div>
+</div>
+{% endif %}
+
 <div class="chapter-header">
     <h1 class="chapter-title">
         📖 {{ chapter.title_translation|default:chapter.title }}
@@ -339,9 +428,17 @@
         <button onclick="prepareChapter()" class="btn btn-primary" id="prepareBtn">
             🔧 Chia Segments
         </button>
+        
+        {% if chapter.translation %}
+        <button onclick="retranslateChapter()" class="btn btn-retranslate" id="retranslateBtn">
+            🔄 Dịch lại Chapter
+        </button>
+        {% else %}
         <button onclick="translateChapter()" class="btn btn-success" id="translateBtn">
             🌐 Dịch Toàn Bộ
         </button>
+        {% endif %}
+        
         <button onclick="reviewChapterAI()" class="btn btn-warning" id="reviewBtn">
             🧐 Review AI
         </button>
@@ -400,31 +497,54 @@
 </div>
 {% endif %}
 
-<!-- Review AI Results Section -->
-<div class="review-ai-section" id="reviewAISection" style="display: none;">
-    <div class="review-ai-header">
-        <h3 style="color: var(--dark);">🔍 Kết quả Review AI</h3>
-        <button onclick="toggleReviewDetails()" class="btn btn-secondary btn-sm">
-            <span id="toggleIcon">▼</span> Chi tiết
-        </button>
-    </div>
-    <div class="segment-reviews" id="segmentReviews" style="display: none;">
-        <!-- Segment reviews will be inserted here -->
-    </div>
-</div>
-
 <div class="segments-section">
     <h2 class="section-title">
         📝 Segments ({{ segments.count }})
     </h2>
     
+    <!-- Legend for foreign characters -->
+    {% if chapter.foreign_char_warning %}
+    <div class="foreign-char-legend">
+        <div style="font-weight: 600; color: var(--dark); margin-right: 0.5rem;">Chú thích màu:</div>
+        <div class="legend-item">
+            <span class="legend-box legend-chinese"></span>
+            <span>🇨🇳 Chữ Hán</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-box legend-korean"></span>
+            <span>🇰🇷 Chữ Hàn</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-box legend-japanese"></span>
+            <span>🇯🇵 Chữ Nhật</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-box legend-thai"></span>
+            <span>🇹🇭 Chữ Thái</span>
+        </div>
+    </div>
+    {% endif %}
+    
     {% for segment in segments %}
-    <div class="segment-card" id="segment-{{ segment.id }}">
+    <div class="segment-card" id="segment-{{ segment.id }}" 
+         data-has-warning="{% if segment.foreign_char_warning %}true{% else %}false{% endif %}">
         <div class="segment-header">
-            <span class="segment-title">Segment {{ segment.index }}</span>
+            <span class="segment-title">
+                Segment {{ segment.index }}
+                {% if segment.index == 1 and chapter.title_translation %}
+                <span style="color: var(--primary); font-size: 0.85rem; font-weight: 500;">
+                    (Tiêu đề: {{ chapter.title_translation }})
+                </span>
+                {% endif %}
+            </span>
             <div class="badges">
                 {% if segment.translation %}
                     <span class="badge badge-success">✓ Đã dịch</span>
+                    {% if segment.foreign_char_warning %}
+                        <span class="badge badge-warning">
+                            🚨 Có ký tự ngoại ngữ
+                        </span>
+                    {% endif %}
                 {% else %}
                     <span class="badge badge-pending">⏳ Chưa dịch</span>
                 {% endif %}
@@ -440,9 +560,34 @@
         </div>
         
         {% if segment.translation %}
-        <div class="content-block">
+        <div class="content-block translation-display">
             <div class="content-label">🇻🇳 Bản dịch</div>
-            <div class="content-text">{{ segment.translation }}</div>
+            <div class="content-text" id="translation-{{ segment.id }}">
+                {{ segment.translation }}
+            </div>
+        </div>
+        
+        <!-- Foreign Character Warning for Segment -->
+        {% if segment.foreign_char_warning %}
+        <div class="review-box" style="border-color: #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));">
+            <div class="review-label" style="color: #991b1b;">
+                🚨 Cảnh báo ký tự ngoại ngữ
+            </div>
+            <div style="white-space: pre-line; line-height: 1.6; color: var(--text); font-family: 'Courier New', monospace; font-size: 0.9rem;">
+                {{ segment.foreign_char_warning }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <button onclick="retranslateSegment({{ segment.id }})" class="btn btn-retranslate">
+                🔄 Dịch lại segment
+            </button>
+            {% if segment.foreign_char_warning %}
+            <button onclick="highlightForeignChars({{ segment.id }})" class="btn btn-secondary" id="highlight-btn-{{ segment.id }}">
+                🔍 Highlight ký tự lạ
+            </button>
+            {% endif %}
         </div>
         {% else %}
         <button onclick="translateSegment({{ segment.id }})" class="btn btn-primary">
@@ -549,7 +694,11 @@ async function translateChapter() {
         const data = await response.json();
         
         if (data.ok) {
-            alert(data.message);
+            let msg = `✅ ${data.message}`;
+            if (data.has_foreign_warning) {
+                msg += `\n\n⚠️ Cảnh báo: Phát hiện ${data.foreign_warnings.length} segment có ký tự ngoại ngữ!`;
+            }
+            alert(msg);
             location.reload();
         } else {
             alert('Lỗi: ' + data.error);
@@ -559,6 +708,100 @@ async function translateChapter() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = '🌐 Dịch Toàn Bộ';
+    }
+}
+
+async function retranslateSegment(segmentId) {
+    if (!confirm('Dịch lại segment này? Bản dịch cũ sẽ bị ghi đè.')) {
+        return;
+    }
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang dịch lại...';
+    
+    try {
+        const response = await fetch(`/segment/${segmentId}/retranslate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        const data = await response.json();
+        
+        if (data.ok) {
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Dịch lại segment';
+    }
+}
+
+async function retranslateChapter() {
+    if (!confirm('Dịch lại toàn bộ chapter? Tất cả bản dịch cũ sẽ bị ghi đè.\n\nQuá trình này có thể mất vài phút.')) {
+        return;
+    }
+    
+    const btn = document.getElementById('retranslateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang dịch lại...';
+    
+    try {
+        const response = await fetch(`/chapter/${chapterId}/retranslate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        const data = await response.json();
+        
+        if (data.ok) {
+            let msg = `✅ Dịch lại thành công!\n\n${data.message}`;
+            if (data.has_foreign_warning) {
+                msg += `\n\n⚠️ Vẫn phát hiện ${data.foreign_warnings.length} segment có ký tự ngoại ngữ`;
+            }
+            alert(msg);
+            location.reload();
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Dịch lại Chapter';
+    }
+}
+
+async function highlightForeignChars(segmentId) {
+    const translationDiv = document.getElementById(`translation-${segmentId}`);
+    const btn = document.getElementById(`highlight-btn-${segmentId}`);
+    
+    if (!translationDiv) return;
+    
+    try {
+        const response = await fetch(`/segment/${segmentId}/highlight-foreign/`);
+        const data = await response.json();
+        
+        if (data.ok) {
+            // Toggle between normal and highlighted
+            if (translationDiv.dataset.highlighted === 'true') {
+                translationDiv.innerHTML = data.original_text;
+                translationDiv.dataset.highlighted = 'false';
+                btn.textContent = '🔍 Highlight ký tự lạ';
+            } else {
+                translationDiv.innerHTML = data.highlighted_html;
+                translationDiv.dataset.highlighted = 'true';
+                btn.textContent = '👁️ Xem bình thường';
+            }
+        }
+    } catch (error) {
+        console.error('Error highlighting:', error);
     }
 }
 
@@ -580,8 +823,6 @@ async function reviewChapterAI() {
         });
         
         if (response.ok) {
-            // Load review results
-            await loadReviewResults();
             alert('✅ Review hoàn tất!');
             location.reload();
         } else {
@@ -594,60 +835,5 @@ async function reviewChapterAI() {
         btn.innerHTML = '🧐 Review AI';
     }
 }
-
-async function loadReviewResults() {
-    try {
-        const response = await fetch(`/chapter/${chapterId}/review/results/`);
-        const data = await response.json();
-        
-        if (data.ok && data.segments && data.segments.length > 0) {
-            const section = document.getElementById('reviewAISection');
-            const container = document.getElementById('segmentReviews');
-            
-            section.style.display = 'block';
-            
-            let html = '';
-            data.segments.forEach(seg => {
-                const scoreClass = seg.match_percent >= 80 ? 'badge-success' : 
-                                 seg.match_percent >= 60 ? 'badge-score' : 'badge-pending';
-                html += `
-                    <div class="segment-review-item">
-                        <div class="segment-review-header">
-                            <strong>Segment ${seg.index}</strong>
-                            <span class="badge ${scoreClass}">${seg.match_percent.toFixed(1)}%</span>
-                        </div>
-                        <div style="color: var(--text); line-height: 1.6; white-space: pre-line; font-size: 0.9rem;">
-                            ${seg.review || 'Không có nhận xét'}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-        }
-    } catch (error) {
-        console.error('Error loading review results:', error);
-    }
-}
-
-function toggleReviewDetails() {
-    const container = document.getElementById('segmentReviews');
-    const icon = document.getElementById('toggleIcon');
-    
-    if (container.style.display === 'none') {
-        container.style.display = 'grid';
-        icon.textContent = '▲';
-    } else {
-        container.style.display = 'none';
-        icon.textContent = '▼';
-    }
-}
-
-// Load review results on page load if exists
-document.addEventListener('DOMContentLoaded', function() {
-    {% if chapter.match_percent %}
-    loadReviewResults();
-    {% endif %}
-});
 </script>
 {% endblock %}

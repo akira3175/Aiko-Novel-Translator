@@ -11,6 +11,7 @@ from .utils.segment_processor import SegmentProcessor
 from .utils.glossary_generator import GlossaryGenerator
 import yaml
 from django.http import HttpResponse
+from .utils.foreign_char_detector import ForeignCharDetector
 
 
 def dashboard(request):
@@ -100,41 +101,81 @@ def prepare_chapter_view(request, chapter_id):
 
 @require_POST
 def translate_segment_view(request, segment_id):
-    """Dịch một segment"""
+    """
+    Dịch một segment với:
+    - Lưu tiêu đề vào CHAPTER nếu là segment đầu tiên
+    - Phát hiện ký tự ngoại ngữ
+    - Cho phép force re-translate
+    """
     segment = get_object_or_404(Segment, pk=segment_id)
     
+    # Kiểm tra xem có force re-translate không
+    force_retranslate = request.POST.get('force', 'false') == 'true'
+    
+    # Nếu đã dịch và không force, báo lỗi
+    if segment.translation and not force_retranslate:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Segment đã được dịch. Dùng "Dịch lại" để dịch lại.',
+            'already_translated': True
+        }, status=400)
+    
     try:
-        # Lấy glossary của novel
-        glossary_terms = segment.chapter.volume.novel.glossaries.all()
+        chapter = segment.chapter
+        novel = chapter.volume.novel
+        
+        # Lấy glossary
+        glossary_terms = novel.glossaries.all()
         glossary_context = "\n".join([
             f"{g.term_cn} → {g.term_vi}"
             for g in glossary_terms
         ])
         
-        # Dịch segment
-        translated = translate_text(
-            segment.content_raw,
-            glossary_context=glossary_context
+        # Lấy các chương trước để tham khảo (context)
+        pre_chapters = _get_previous_chapters_context(chapter, limit=2)
+        
+        # Gọi AI để dịch
+        from .utils.gemini_client import translate_with_gemini
+        title_trans, content_trans = translate_with_gemini(
+            source_text=segment.content_raw,
+            glossary_context=glossary_context,
+            pre_chapters=pre_chapters
         )
         
-        segment.translation = translated
+        # Lưu bản dịch content
+        segment.translation = content_trans
+        
+        # Lưu tiêu đề vào CHAPTER nếu là segment đầu tiên
+        if segment.index == 1 and title_trans:
+            chapter.title_translation = title_trans
+            chapter.save(update_fields=['title_translation'])
+        
+        # Phát hiện ký tự ngoại ngữ
+        detection = ForeignCharDetector.detect(content_trans)
+        
+        if detection['has_foreign']:
+            segment.foreign_char_warning = detection['warning_message']
+        else:
+            segment.foreign_char_warning = None
+        
         segment.save()
         
         # Cập nhật progress
-        progress = SegmentProcessor.get_translation_progress(segment.chapter)
+        progress = SegmentProcessor.get_translation_progress(chapter)
         
         # Nếu đã dịch xong tất cả, gộp lại
         if progress['remaining'] == 0:
-            merged = SegmentProcessor.merge_translations(segment.chapter)
-            segment.chapter.translation = merged
-            segment.chapter.status = 'translated'
-            segment.chapter.save()
+            _merge_chapter_translation(chapter)
         
         return JsonResponse({
             'ok': True,
-            'translation': translated,
-            'progress': progress
+            'translation': content_trans,
+            'title_translation': title_trans if segment.index == 1 else None,
+            'progress': progress,
+            'foreign_detection': detection,
+            'highlighted_text': ForeignCharDetector.highlight_html(content_trans) if detection['has_foreign'] else None
         })
+        
     except Exception as e:
         return JsonResponse({
             'ok': False,
@@ -144,48 +185,188 @@ def translate_segment_view(request, segment_id):
 
 @require_POST
 def translate_chapter_auto_view(request, chapter_id):
-    """Dịch toàn bộ chapter (tự động chia segments và dịch)"""
+    """
+    Dịch toàn bộ chapter (tự động chia segments và dịch)
+    Với khả năng re-translate
+    """
     chapter = get_object_or_404(Chapter, pk=chapter_id)
     
+    force_retranslate = request.POST.get('force', 'false') == 'true'
+    
+    # Kiểm tra nếu đã dịch và không force
+    if chapter.translation and not force_retranslate:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Chapter đã được dịch. Dùng "Dịch lại" để dịch lại.',
+            'already_translated': True
+        }, status=400)
+    
     try:
-        # Bước 1: Chia segments nếu chưa có
-        if chapter.segments.count() == 0:
+        # Bước 1: Chia segments nếu chưa có hoặc force
+        if chapter.segments.count() == 0 or force_retranslate:
             SegmentProcessor.create_segments(chapter)
         
-        # Bước 2: Dịch từng segment
-        glossary_terms = chapter.volume.novel.glossaries.all()
+        # Bước 2: Lấy context
+        novel = chapter.volume.novel
+        glossary_terms = novel.glossaries.all()
         glossary_context = "\n".join([
             f"{g.term_cn} → {g.term_vi}"
             for g in glossary_terms
         ])
         
-        translated_count = 0
-        for segment in chapter.segments.all():
-            if not segment.translation:
-                segment.translation = translate_text(
-                    segment.content_raw,
-                    glossary_context=glossary_context
-                )
-                segment.save()
-                translated_count += 1
+        pre_chapters = _get_previous_chapters_context(chapter, limit=2)
         
-        # Bước 3: Gộp translations
-        merged = SegmentProcessor.merge_translations(chapter)
-        chapter.translation = merged
-        chapter.status = 'translated'
-        chapter.save()
+        # Bước 3: Dịch từng segment
+        from .utils.gemini_client import translate_with_gemini
+        
+        translated_count = 0
+        foreign_warnings = []
+        
+        for segment in chapter.segments.all():
+            # Bỏ qua segment đã dịch nếu không force
+            if segment.translation and not force_retranslate:
+                continue
+            
+            title_trans, content_trans = translate_with_gemini(
+                source_text=segment.content_raw,
+                glossary_context=glossary_context,
+                pre_chapters=pre_chapters
+            )
+            
+            segment.translation = content_trans
+            
+            # Lưu tiêu đề vào CHAPTER cho segment đầu tiên
+            if segment.index == 1 and title_trans:
+                chapter.title_translation = title_trans
+            
+            # Phát hiện ký tự ngoại ngữ
+            detection = ForeignCharDetector.detect(content_trans)
+            if detection['has_foreign']:
+                segment.foreign_char_warning = detection['warning_message']
+                foreign_warnings.append(f"Segment {segment.index}: {detection['warning_message']}")
+            else:
+                segment.foreign_char_warning = None
+            
+            segment.save()
+            translated_count += 1
+        
+        # Lưu title translation vào chapter
+        if chapter.title_translation:
+            chapter.save(update_fields=['title_translation'])
+        
+        # Bước 4: Gộp translations
+        _merge_chapter_translation(chapter)
+        
+        # Tổng hợp cảnh báo vào chapter
+        if foreign_warnings:
+            chapter.foreign_char_warning = "\n\n".join(foreign_warnings)
+            chapter.save(update_fields=['foreign_char_warning'])
         
         return JsonResponse({
             'ok': True,
             'message': f'Đã dịch {translated_count} segments',
-            'translation': merged
+            'translation': chapter.translation,
+            'title_translation': chapter.title_translation,
+            'has_foreign_warning': len(foreign_warnings) > 0,
+            'foreign_warnings': foreign_warnings
         })
+        
     except Exception as e:
         return JsonResponse({
             'ok': False,
             'error': str(e)
         }, status=400)
 
+
+def _get_previous_chapters_context(chapter: Chapter, limit: int = 2) -> str:
+    """
+    Lấy nội dung các chương trước để làm context
+    """
+    volume = chapter.volume
+    novel = volume.novel
+    
+    # Lấy tất cả chapters trước chapter hiện tại
+    previous_chapters = []
+    
+    for vol in novel.volumes.filter(index__lte=volume.index).order_by('index'):
+        if vol.index < volume.index:
+            # Lấy tất cả chapters của volume trước
+            chapters = vol.chapters.filter(
+                translation__isnull=False
+            ).order_by('index')
+            previous_chapters.extend(chapters)
+        else:
+            # Lấy chapters trước chapter hiện tại trong volume hiện tại
+            chapters = vol.chapters.filter(
+                index__lt=chapter.index,
+                translation__isnull=False
+            ).order_by('index')
+            previous_chapters.extend(chapters)
+    
+    # Lấy N chapters gần nhất
+    previous_chapters = previous_chapters[-limit:] if limit else previous_chapters
+    
+    # Format context
+    context_parts = []
+    for ch in previous_chapters:
+        title = ch.title_translation or ch.title
+        content = ch.translation[:1000]  # Giới hạn 1000 ký tự
+        context_parts.append(f"=== {title} ===\n{content}...")
+    
+    return "\n\n".join(context_parts)
+
+
+def _merge_chapter_translation(chapter: Chapter):
+    """
+    Gộp tất cả translations của segments thành bản dịch hoàn chỉnh
+    Lưu vào chapter.translation
+    """
+    segments = chapter.segments.order_by('index')
+    
+    # Gộp content từ tất cả segments
+    translations = []
+    for segment in segments:
+        if segment.translation:
+            translations.append(segment.translation.strip())
+    
+    chapter.translation = '\n\n'.join(translations)
+    chapter.status = 'translated'
+    
+    # Tổng hợp foreign warnings từ các segments
+    warnings = []
+    for segment in segments:
+        if segment.foreign_char_warning:
+            warnings.append(f"Segment {segment.index}:\n{segment.foreign_char_warning}")
+    
+    if warnings:
+        chapter.foreign_char_warning = "\n\n".join(warnings)
+    else:
+        chapter.foreign_char_warning = None
+    
+    chapter.save()
+
+
+@require_POST  
+def retranslate_segment_view(request, segment_id):
+    """
+    Endpoint riêng cho việc dịch lại segment
+    """
+    # Chuyển request sang translate_segment_view với force=true
+    request.POST = request.POST.copy()
+    request.POST['force'] = 'true'
+    return translate_segment_view(request, segment_id)
+
+
+@require_POST
+def retranslate_chapter_view(request, chapter_id):
+    """
+    Endpoint riêng cho việc dịch lại chapter
+    """
+    request.POST = request.POST.copy()
+    request.POST['force'] = 'true'
+    return translate_chapter_auto_view(request, chapter_id)
+
+#==================== REVIEW VIEWS ====================
 
 @require_POST
 def review_chapter_view(request, chapter_id):
@@ -675,3 +856,26 @@ def import_glossary_txt_view(request, novel_id):
             'ok': False,
             'error': f'Lỗi: {str(e)}'
         }, status=400)
+    
+def highlight_foreign_chars_view(request, segment_id):
+    """
+    API endpoint để lấy bản dịch có highlight ký tự ngoại ngữ
+    """
+    segment = get_object_or_404(Segment, pk=segment_id)
+    
+    if not segment.translation:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Segment chưa được dịch'
+        }, status=400)
+    
+    # Highlight foreign characters
+    highlighted = ForeignCharDetector.highlight_html(segment.translation)
+    detection = ForeignCharDetector.detect(segment.translation)
+    
+    return JsonResponse({
+        'ok': True,
+        'original_text': segment.translation,
+        'highlighted_html': highlighted,
+        'detection': detection
+    })
