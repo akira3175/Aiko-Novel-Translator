@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-yl5fy0e_9%(6zfd#wjv-@$(y=7^3$h^p9fhm9i*1wzees22zy(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['aiko-novel-translator-production.up.railway.app',
+                 'akira3175.pythonanywhere.com']
 
 
 # Application definition
