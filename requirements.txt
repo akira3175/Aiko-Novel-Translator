@@ -6,3 +6,8 @@ celery
 redis
 # Nếu bạn dùng OpenAI native client thay cho google.genai
 openai
+# Nếu bạn dùng google.genai thay cho OpenAI native client
+google-genai
+genai
+
+PyYAML
