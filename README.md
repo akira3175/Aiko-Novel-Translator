@@ -1,3 +1,6 @@
+Aiko Novel Translator
+Hệ thống dịch thuật tiểu thuyết tự động sử dụng AI (Gemini API), hỗ trợ chia segments, quản lý glossary và review chất lượng dịch.
+
 📋 Mục lục
 
 Tính năng chính
@@ -316,6 +319,53 @@ mermaidgraph TD
     L -->|Rồi| M[Merge thành chapter.translation]
     M --> N[Tổng hợp warnings vào chapter]
 
+💾 Database Schema
+Novel
+python- title: str
+- author: str (optional)
+- description: text (chứa checkpoint: "checkpoint:123")
+- language: str (zh, en, ja, ko)
+- translation_style: text (hướng dẫn phong cách dịch)
+- created_at: datetime
+Volume
+python- novel: ForeignKey(Novel)
+- index: int (unique per novel)
+- title: str
+Chapter
+python- volume: ForeignKey(Volume)
+- index: int (unique per volume)
+- title: str (tiêu đề gốc)
+- title_translation: str (tiêu đề dịch)
+- content_raw: text (nội dung gốc, dùng cho chapters chưa chia segment)
+- translation: text (nội dung dịch đầy đủ)
+- match_percent: float (điểm review 0-100)
+- status: str (imported, translated, reviewed)
+- review: text (nhận xét từ AI)
+- foreign_char_warning: text (cảnh báo ký tự ngoại ngữ)
+- updated_at: datetime
+Segment
+python- chapter: ForeignKey(Chapter)
+- index: int (unique per chapter)
+- content_raw: text (~3000 từ)
+- translation: text
+- match_percent: float
+- review: text
+- foreign_char_warning: text
+- updated_at: datetime
+Glossary
+python- novel: ForeignKey(Novel)
+- term_cn: str (unique per novel)
+- term_vi: str
+- note: text
+APIKey
+python- provider: str (gemini, openai, anthropic)
+- key: str (unique)
+- name: str (tên gợi nhớ)
+- is_active: bool
+- usage_count: int
+- last_used: datetime
+- created_at: datetime
+
 🔑 API Key Rotation
 Cơ chế hoạt động:
 
@@ -419,11 +469,39 @@ AI sẽ tuân theo các hướng dẫn này khi dịch.
 
 ---
 
+## 🚀 Deploy
+
+### Railway / Render
+
+1. Thêm `Procfile`:
+```
+web: gunicorn novel_translator.wsgi
+```
+
+2. Thêm `runtime.txt`:
+```
+python-3.11.0
+```
+
+3. Set environment variables:
+```
+DJANGO_SETTINGS_MODULE=novel_translator.settings
+SECRET_KEY=your-secret-key
+DEBUG=False
+ALLOWED_HOSTS=your-domain.com
+PythonAnywhere
+
+Upload code
+Set up virtualenv
+Configure WSGI file
+Chạy migrations
+
+
 📄 License
 MIT License
 
 👨‍💻 Author
-Akira
+Aiko Team
 
 🙏 Credits
 
