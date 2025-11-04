@@ -25,6 +25,9 @@ urlpatterns = [
     path('segment/<int:segment_id>/retranslate/', views.retranslate_segment_view, name='retranslate_segment'),
     path('segment/<int:segment_id>/highlight-foreign/', views.highlight_foreign_chars_view, name='highlight_foreign'),
     
+    # Translation style endpoint
+    path('novel/<int:novel_id>/update-translation-style/', views.update_translation_style_view, name='update_translation_style'),
+
     # Review endpoints
     path('chapter/<int:chapter_id>/review/', views.review_chapter_view, name='review_chapter'),
     path('chapter/<int:chapter_id>/review/results/', views.review_chapter_results_view, name='review_chapter_results'),

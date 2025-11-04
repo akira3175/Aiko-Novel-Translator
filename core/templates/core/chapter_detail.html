@@ -39,6 +39,101 @@
         flex-wrap: wrap;
     }
     
+    /* Translation Style Section */
+    .translation-style-section {
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .style-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .style-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .style-content {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.6;
+        color: var(--text);
+        font-size: 0.95rem;
+    }
+    
+    .style-content.empty {
+        color: var(--text-light);
+        font-style: italic;
+    }
+    
+    .style-editor {
+        display: none;
+    }
+    
+    .style-editor.show {
+        display: block;
+    }
+    
+    .style-textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 1rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        line-height: 1.6;
+        resize: vertical;
+    }
+    
+    .style-textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+    
+    .style-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .style-examples {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: rgba(99, 102, 241, 0.05);
+        border-radius: 8px;
+        border-left: 3px solid var(--primary);
+    }
+    
+    .style-examples-title {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .style-example {
+        font-size: 0.85rem;
+        color: var(--text-light);
+        line-height: 1.6;
+        margin-top: 0.25rem;
+    }
+    
     /* Foreign character warning styles */
     .foreign-warning {
         background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
@@ -84,59 +179,6 @@
         color: #92400e;
         font-size: 0.9rem;
     }
-    
-    /* Highlighted foreign chars trong content */
-    mark {
-        padding: 2px 4px;
-        border-radius: 3px;
-        font-weight: 600;
-    }
-    
-    /* Button styles for retranslate */
-    .btn-retranslate {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
-    }
-    
-    .btn-retranslate:hover {
-        background: linear-gradient(135deg, #d97706, #b45309);
-    }
-    
-    /* Translation display */
-    .translation-display {
-        position: relative;
-    }
-    
-    .foreign-char-legend {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
-        padding: 0.75rem;
-        background: var(--light);
-        border-radius: 8px;
-    }
-    
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        color: var(--text);
-    }
-    
-    .legend-box {
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
-        display: inline-block;
-        border: 1px solid rgba(0,0,0,0.1);
-    }
-    
-    .legend-chinese { background: #fee2e2; }
-    .legend-korean { background: #fef3c7; }
-    .legend-japanese { background: #d1fae5; }
-    .legend-thai { background: #e9d5ff; }
     
     .progress-section {
         background: white;
@@ -403,6 +445,53 @@
     <span>Chapter {{ chapter.index }}</span>
 </div>
 
+<!-- Translation Style Section -->
+<div class="translation-style-section">
+    <div class="style-header">
+        <div class="style-title">
+            ✨ Phong cách dịch
+        </div>
+        <button onclick="toggleStyleEditor()" class="btn btn-secondary" id="editStyleBtn">
+            ✏️ Chỉnh sửa
+        </button>
+    </div>
+    
+    <div id="styleDisplay" class="style-display">
+        {% if chapter.volume.novel.translation_style %}
+        <div class="style-content">{{ chapter.volume.novel.translation_style }}</div>
+        {% else %}
+        <div class="style-content empty">
+            Chưa có hướng dẫn phong cách dịch. Nhấn "Chỉnh sửa" để thêm.
+        </div>
+        {% endif %}
+    </div>
+    
+    <div id="styleEditor" class="style-editor">
+        <textarea 
+            id="styleTextarea" 
+            class="style-textarea" 
+            placeholder="Nhập hướng dẫn phong cách dịch cho AI...&#10;&#10;Ví dụ:&#10;- Văn phong cổ trang, trang trọng&#10;- Giữ nguyên xưng hô như 'Tiểu tử', 'Lão phu'&#10;- Dịch tự nhiên, dễ hiểu&#10;- Giữ tên riêng bằng Hán Việt"
+        >{{ chapter.volume.novel.translation_style }}</textarea>
+        
+        <div class="style-actions">
+            <button onclick="saveTranslationStyle()" class="btn btn-primary" id="saveStyleBtn">
+                💾 Lưu
+            </button>
+            <button onclick="cancelStyleEdit()" class="btn btn-secondary">
+                ❌ Hủy
+            </button>
+        </div>
+        
+        <div class="style-examples">
+            <div class="style-examples-title">💡 Gợi ý:</div>
+            <div class="style-example">• "Văn phong hiện đại, trẻ trung, dễ hiểu. Tránh dùng từ cổ."</div>
+            <div class="style-example">• "Giữ nguyên phong cách cổ trang, xưng hô truyền thống (Tiểu tử, Lão phu, Ta, Ngươi...)"</div>
+            <div class="style-example">• "Dịch sát nghĩa, tự nhiên. Tên riêng dùng Hán Việt."</div>
+            <div class="style-example">• "Phong cách hài hước, lối văn trẻ, sử dụng từ lóng phù hợp."</div>
+        </div>
+    </div>
+</div>
+
 <!-- Foreign Character Warning Section -->
 {% if chapter.foreign_char_warning %}
 <div class="foreign-warning">
@@ -502,29 +591,6 @@
         📝 Segments ({{ segments.count }})
     </h2>
     
-    <!-- Legend for foreign characters -->
-    {% if chapter.foreign_char_warning %}
-    <div class="foreign-char-legend">
-        <div style="font-weight: 600; color: var(--dark); margin-right: 0.5rem;">Chú thích màu:</div>
-        <div class="legend-item">
-            <span class="legend-box legend-chinese"></span>
-            <span>🇨🇳 Chữ Hán</span>
-        </div>
-        <div class="legend-item">
-            <span class="legend-box legend-korean"></span>
-            <span>🇰🇷 Chữ Hàn</span>
-        </div>
-        <div class="legend-item">
-            <span class="legend-box legend-japanese"></span>
-            <span>🇯🇵 Chữ Nhật</span>
-        </div>
-        <div class="legend-item">
-            <span class="legend-box legend-thai"></span>
-            <span>🇹🇭 Chữ Thái</span>
-        </div>
-    </div>
-    {% endif %}
-    
     {% for segment in segments %}
     <div class="segment-card" id="segment-{{ segment.id }}" 
          data-has-warning="{% if segment.foreign_char_warning %}true{% else %}false{% endif %}">
@@ -567,7 +633,6 @@
             </div>
         </div>
         
-        <!-- Foreign Character Warning for Segment -->
         {% if segment.foreign_char_warning %}
         <div class="review-box" style="border-color: #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));">
             <div class="review-label" style="color: #991b1b;">
@@ -612,11 +677,80 @@
 
 <script>
 const chapterId = {{ chapter.id }};
+const novelId = {{ chapter.volume.novel.id }};
 
 function getCookie(name) {
     let value = "; " + document.cookie;
     let parts = value.split("; " + name + "=");
     if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
+// Translation Style Functions
+function toggleStyleEditor() {
+    const editor = document.getElementById('styleEditor');
+    const display = document.getElementById('styleDisplay');
+    const btn = document.getElementById('editStyleBtn');
+    
+    if (editor.classList.contains('show')) {
+        editor.classList.remove('show');
+        display.style.display = 'block';
+        btn.textContent = '✏️ Chỉnh sửa';
+    } else {
+        editor.classList.add('show');
+        display.style.display = 'none';
+        btn.textContent = '👁️ Xem';
+        document.getElementById('styleTextarea').focus();
+    }
+}
+
+function cancelStyleEdit() {
+    document.getElementById('styleEditor').classList.remove('show');
+    document.getElementById('styleDisplay').style.display = 'block';
+    document.getElementById('editStyleBtn').textContent = '✏️ Chỉnh sửa';
+}
+
+async function saveTranslationStyle() {
+    const textarea = document.getElementById('styleTextarea');
+    const style = textarea.value.trim();
+    const btn = document.getElementById('saveStyleBtn');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Đang lưu...';
+    
+    try {
+        const response = await fetch(`/novel/${novelId}/update-translation-style/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ translation_style: style })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+            // Update display
+            const displayDiv = document.querySelector('.style-content');
+            if (style) {
+                displayDiv.textContent = style;
+                displayDiv.classList.remove('empty');
+            } else {
+                displayDiv.textContent = 'Chưa có hướng dẫn phong cách dịch. Nhấn "Chỉnh sửa" để thêm.';
+                displayDiv.classList.add('empty');
+            }
+            
+            cancelStyleEdit();
+            alert('✅ Đã lưu phong cách dịch!');
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    } catch (error) {
+        alert('Lỗi kết nối: ' + error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '💾 Lưu';
+    }
 }
 
 async function prepareChapter() {

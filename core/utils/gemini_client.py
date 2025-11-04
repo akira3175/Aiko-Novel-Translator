@@ -113,6 +113,7 @@ def translate_with_gemini(
     source_text: str,
     glossary_context: str = "",
     pre_chapters: str = "",
+    translation_style: str = "",
     model: str = "gemini-2.5-pro"
 ) -> tuple[str, str]:
     """
@@ -128,7 +129,13 @@ def translate_with_gemini(
         Tuple (title_translation, content_translation)
     """
     client = get_gemini_client()
-    
+    style_section = ""
+    if translation_style:
+        style_section = f"""
+## ✨ Phong cách dịch
+{translation_style}
+"""
+
     prompt = f"""
 # 🌸 Vai trò
 Bạn là một **biên tập viên dịch thuật tài hoa**, với trái tim dành trọn cho từng con chữ.  
@@ -143,6 +150,7 @@ Dịch **cả tiêu đề (title)** lẫn **nội dung (content)** sang **tiến
 giữ **văn phong mượt mà, nhất quán**.  
 Đọc **các chương trước** để tham khảo xương hồi và ngữ cảnh để chương này được mạch lạc.  
 Dịch **đúng theo bảng thuật ngữ tên riêng bên dưới**.
+{style_section}
 
 ---
 
@@ -196,6 +204,7 @@ Chỉ xuất đúng theo định dạng sau, **không thêm bất kỳ lời gi�
             )
         )
         
+        print(prompt)
         text = response.text.strip()
         
         # Parse kết quả

@@ -5,6 +5,8 @@ from .models import Novel, Volume, Chapter, Glossary, Segment, APIKey
 @admin.register(Novel)
 class NovelAdmin(admin.ModelAdmin):
     list_display = ('title', 'author', 'created_at')
+    fields = ('title', 'author', 'description', 'language', 'translation_style', 'created_at')
+    readonly_fields = ('created_at',)
 
 
 @admin.register(Volume)

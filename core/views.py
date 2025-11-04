@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse 
+import json
 from django.views.decorators.http import require_POST, require_http_methods
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q
@@ -132,14 +133,18 @@ def translate_segment_view(request, segment_id):
         ])
         
         # Lấy các chương trước để tham khảo (context)
-        pre_chapters = _get_previous_chapters_context(chapter, limit=2)
+        pre_chapters = _get_previous_chapters_context(chapter, limit=3)
+
+        # Lấy phong cách dịch nếu có
+        translation_style = novel.translation_style or ""
         
         # Gọi AI để dịch
         from .utils.gemini_client import translate_with_gemini
         title_trans, content_trans = translate_with_gemini(
             source_text=segment.content_raw,
             glossary_context=glossary_context,
-            pre_chapters=pre_chapters
+            pre_chapters=pre_chapters,
+            translation_style=translation_style
         )
         
         # Lưu bản dịch content
@@ -214,7 +219,10 @@ def translate_chapter_auto_view(request, chapter_id):
             for g in glossary_terms
         ])
         
-        pre_chapters = _get_previous_chapters_context(chapter, limit=2)
+        pre_chapters = _get_previous_chapters_context(chapter, limit=3)
+
+        # Lấy phong cách dịch nếu có
+        translation_style = novel.translation_style or ""
         
         # Bước 3: Dịch từng segment
         from .utils.gemini_client import translate_with_gemini
@@ -230,7 +238,8 @@ def translate_chapter_auto_view(request, chapter_id):
             title_trans, content_trans = translate_with_gemini(
                 source_text=segment.content_raw,
                 glossary_context=glossary_context,
-                pre_chapters=pre_chapters
+                pre_chapters=pre_chapters,
+                translation_style=translation_style
             )
             
             segment.translation = content_trans
@@ -278,7 +287,7 @@ def translate_chapter_auto_view(request, chapter_id):
         }, status=400)
 
 
-def _get_previous_chapters_context(chapter: Chapter, limit: int = 2) -> str:
+def _get_previous_chapters_context(chapter: Chapter, limit: int = 3) -> str:
     """
     Lấy nội dung các chương trước để làm context
     """
@@ -310,7 +319,7 @@ def _get_previous_chapters_context(chapter: Chapter, limit: int = 2) -> str:
     context_parts = []
     for ch in previous_chapters:
         title = ch.title_translation or ch.title
-        content = ch.translation[:1000]  # Giới hạn 1000 ký tự
+        content = ch.translation[:20000]  # Giới hạn 20000 ký tự
         context_parts.append(f"=== {title} ===\n{content}...")
     
     return "\n\n".join(context_parts)
@@ -365,6 +374,29 @@ def retranslate_chapter_view(request, chapter_id):
     request.POST = request.POST.copy()
     request.POST['force'] = 'true'
     return translate_chapter_auto_view(request, chapter_id)
+
+#==================== TRANSLATION STYLE VIEW ====================
+@require_POST
+def update_translation_style_view(request, novel_id):
+    """Cập nhật phong cách dịch cho novel"""
+    novel = get_object_or_404(Novel, pk=novel_id)
+    
+    try:
+        data = json.loads(request.body)
+        translation_style = data.get('translation_style', '').strip()
+        
+        novel.translation_style = translation_style if translation_style else None
+        novel.save(update_fields=['translation_style'])
+        
+        return JsonResponse({
+            'ok': True,
+            'message': 'Đã cập nhật phong cách dịch'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'ok': False,
+            'error': str(e)
+        }, status=400)
 
 #==================== REVIEW VIEWS ====================
 

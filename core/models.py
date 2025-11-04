@@ -8,6 +8,11 @@ class Novel(models.Model):
     description = models.TextField(blank=True)
     language = models.CharField(max_length=8, default='zh')
     created_at = models.DateTimeField(default=timezone.now)
+    translation_style = models.TextField(
+        blank=True, 
+        null=True,
+        help_text='Hướng dẫn phong cách dịch cho AI (ví dụ: văn phong cổ trang, hiện đại, trẻ trung...)'
+    )
 
     def __str__(self):
         return self.title
