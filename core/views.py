@@ -13,6 +13,7 @@ from .utils.glossary_generator import GlossaryGenerator
 import yaml
 from django.http import HttpResponse
 from .utils.foreign_char_detector import ForeignCharDetector
+from django.contrib import messages
 
 
 def dashboard(request):
@@ -911,3 +912,218 @@ def highlight_foreign_chars_view(request, segment_id):
         'highlighted_html': highlighted,
         'detection': detection
     })
+
+# ==================== NOVEL CRUD ====================
+
+def novel_create_view(request):
+    """Tạo novel mới"""
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        author = request.POST.get('author', '').strip()
+        description = request.POST.get('description', '').strip()
+        language = request.POST.get('language', 'zh')
+        translation_style = request.POST.get('translation_style', '').strip()
+        
+        if title:
+            novel = Novel.objects.create(
+                title=title,
+                author=author,
+                description=description,
+                language=language,
+                translation_style=translation_style if translation_style else None
+            )
+            messages.success(request, f'✅ Đã tạo novel "{title}"')
+            return redirect('core:novel_detail', novel_id=novel.id)
+        else:
+            messages.error(request, '❌ Vui lòng nhập tên truyện')
+    
+    return render(request, 'core/novel_form.html', {
+        'action': 'create',
+        'title': 'Tạo Novel Mới'
+    })
+
+
+def novel_edit_view(request, novel_id):
+    """Chỉnh sửa novel"""
+    novel = get_object_or_404(Novel, pk=novel_id)
+    
+    if request.method == 'POST':
+        novel.title = request.POST.get('title', '').strip()
+        novel.author = request.POST.get('author', '').strip()
+        novel.description = request.POST.get('description', '').strip()
+        novel.language = request.POST.get('language', 'zh')
+        translation_style = request.POST.get('translation_style', '').strip()
+        novel.translation_style = translation_style if translation_style else None
+        
+        if novel.title:
+            novel.save()
+            messages.success(request, f'✅ Đã cập nhật novel "{novel.title}"')
+            return redirect('core:novel_detail', novel_id=novel.id)
+        else:
+            messages.error(request, '❌ Vui lòng nhập tên truyện')
+    
+    return render(request, 'core/novel_form.html', {
+        'action': 'edit',
+        'title': 'Chỉnh Sửa Novel',
+        'novel': novel
+    })
+
+
+@require_POST
+def novel_delete_view(request, novel_id):
+    """Xóa novel"""
+    novel = get_object_or_404(Novel, pk=novel_id)
+    title = novel.title
+    novel.delete()
+    
+    messages.success(request, f'✅ Đã xóa novel "{title}"')
+    return redirect('core:dashboard')
+
+
+# ==================== VOLUME CRUD ====================
+
+def volume_create_view(request, novel_id):
+    """Tạo volume mới"""
+    novel = get_object_or_404(Novel, pk=novel_id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        index = request.POST.get('index', '')
+        
+        try:
+            index = int(index) if index else (novel.volumes.count() + 1)
+            
+            volume = Volume.objects.create(
+                novel=novel,
+                index=index,
+                title=title
+            )
+            messages.success(request, f'✅ Đã tạo Volume {index}')
+            return redirect('core:volume_detail', volume_id=volume.id)
+        except Exception as e:
+            messages.error(request, f'❌ Lỗi: {str(e)}')
+    
+    # Tự động gợi ý index tiếp theo
+    next_index = novel.volumes.count() + 1
+    
+    return render(request, 'core/volume_form.html', {
+        'action': 'create',
+        'title': 'Tạo Volume Mới',
+        'novel': novel,
+        'next_index': next_index
+    })
+
+
+def volume_edit_view(request, volume_id):
+    """Chỉnh sửa volume"""
+    volume = get_object_or_404(Volume, pk=volume_id)
+    
+    if request.method == 'POST':
+        volume.title = request.POST.get('title', '').strip()
+        index = request.POST.get('index', '')
+        
+        try:
+            if index:
+                volume.index = int(index)
+            volume.save()
+            messages.success(request, f'✅ Đã cập nhật Volume {volume.index}')
+            return redirect('core:volume_detail', volume_id=volume.id)
+        except Exception as e:
+            messages.error(request, f'❌ Lỗi: {str(e)}')
+    
+    return render(request, 'core/volume_form.html', {
+        'action': 'edit',
+        'title': 'Chỉnh Sửa Volume',
+        'volume': volume,
+        'novel': volume.novel
+    })
+
+
+@require_POST
+def volume_delete_view(request, volume_id):
+    """Xóa volume"""
+    volume = get_object_or_404(Volume, pk=volume_id)
+    novel_id = volume.novel.id
+    index = volume.index
+    
+    volume.delete()
+    messages.success(request, f'✅ Đã xóa Volume {index}')
+    return redirect('core:novel_detail', novel_id=novel_id)
+
+
+# ==================== CHAPTER CRUD ====================
+
+def chapter_create_view(request, volume_id):
+    """Tạo chapter mới"""
+    volume = get_object_or_404(Volume, pk=volume_id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        title_translation = request.POST.get('title_translation', '').strip()
+        content_raw = request.POST.get('content_raw', '').strip()
+        index = request.POST.get('index', '')
+        
+        try:
+            index = int(index) if index else (volume.chapters.count() + 1)
+            
+            chapter = Chapter.objects.create(
+                volume=volume,
+                index=index,
+                title=title,
+                title_translation=title_translation if title_translation else None,
+                content_raw=content_raw
+            )
+            messages.success(request, f'✅ Đã tạo Chapter {index}')
+            return redirect('core:chapter_detail', chapter_id=chapter.id)
+        except Exception as e:
+            messages.error(request, f'❌ Lỗi: {str(e)}')
+    
+    # Tự động gợi ý index tiếp theo
+    next_index = volume.chapters.count() + 1
+    
+    return render(request, 'core/chapter_form.html', {
+        'action': 'create',
+        'title': 'Tạo Chapter Mới',
+        'volume': volume,
+        'next_index': next_index
+    })
+
+
+def chapter_edit_view(request, chapter_id):
+    """Chỉnh sửa chapter"""
+    chapter = get_object_or_404(Chapter, pk=chapter_id)
+    
+    if request.method == 'POST':
+        chapter.title = request.POST.get('title', '').strip()
+        title_translation = request.POST.get('title_translation', '').strip()
+        chapter.title_translation = title_translation if title_translation else None
+        chapter.content_raw = request.POST.get('content_raw', '').strip()
+        index = request.POST.get('index', '')
+        
+        try:
+            if index:
+                chapter.index = int(index)
+            chapter.save()
+            messages.success(request, f'✅ Đã cập nhật Chapter {chapter.index}')
+            return redirect('core:chapter_detail', chapter_id=chapter.id)
+        except Exception as e:
+            messages.error(request, f'❌ Lỗi: {str(e)}')
+    
+    return render(request, 'core/chapter_form.html', {
+        'action': 'edit',
+        'title': 'Chỉnh Sửa Chapter',
+        'chapter': chapter,
+        'volume': chapter.volume
+    })
+
+
+@require_POST
+def chapter_delete_view(request, chapter_id):
+    """Xóa chapter"""
+    chapter = get_object_or_404(Chapter, pk=chapter_id)
+    volume_id = chapter.volume.id
+    index = chapter.index
+    
+    chapter.delete()
+    messages.success(request, f'✅ Đã xóa Chapter {index}')
+    return redirect('core:volume_detail', volume_id=volume_id)

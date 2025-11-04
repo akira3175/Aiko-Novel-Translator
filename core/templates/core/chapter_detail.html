@@ -531,6 +531,20 @@
         <button onclick="reviewChapterAI()" class="btn btn-warning" id="reviewBtn">
             🧐 Review AI
         </button>
+        
+        <!-- NÚT MỚI -->
+        <a href="{% url 'core:chapter_edit' chapter.id %}" class="btn btn-primary">
+            ✏️ Chỉnh Sửa
+        </a>
+        
+        <form method="post" action="{% url 'core:chapter_delete' chapter.id %}" 
+            style="display: inline;"
+            onsubmit="return confirm('Xóa chapter này?\n\n⚠️ Tất cả segments và bản dịch sẽ bị xóa!');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                🗑️ Xóa Chapter
+            </button>
+        </form>
     </div>
 </div>
 

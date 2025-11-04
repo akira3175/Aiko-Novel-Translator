@@ -410,10 +410,22 @@
             <span class="stat-value">{{ novel.language|upper }}</span>
         </div>
     </div>
-    <div style="margin-top: 1.5rem;">
+    
+    <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
         <a href="{% url 'core:export_novel_yaml' novel.id %}" class="btn btn-secondary">
             📥 Export YAML
         </a>
+        <a href="{% url 'core:novel_edit' novel.id %}" class="btn btn-primary">
+            ✏️ Chỉnh Sửa Novel
+        </a>
+        <form method="post" action="{% url 'core:novel_delete' novel.id %}" 
+            style="display: inline;"
+            onsubmit="return confirm('Xóa novel {{ novel.title }}?\n\n⚠️ CẢNH BÁO: Tất cả volumes, chapters, segments, glossary sẽ bị xóa vĩnh viễn!');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                🗑️ Xóa Novel
+            </button>
+        </form>
     </div>
 </div>
 
@@ -425,6 +437,12 @@
 
 <!-- Volumes Tab -->
 <div class="tab-content active" id="volumes-tab">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 class="section-title" style="margin: 0;">📚 Volumes</h2>
+        <a href="{% url 'core:volume_create' novel.id %}" class="btn btn-primary">
+            ➕ Tạo Volume
+        </a>
+    </div>
     <div class="volumes-section">
         {% if novel.volumes.all %}
             {% for volume in novel.volumes.all %}

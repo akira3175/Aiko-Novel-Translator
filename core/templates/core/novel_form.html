@@ -1,0 +1,191 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .form-label.required::after {
+        content: ' *';
+        color: var(--danger);
+    }
+    
+    .form-input,
+    .form-textarea,
+    .form-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+    
+    .form-textarea {
+        min-height: 150px;
+        resize: vertical;
+        line-height: 1.6;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid var(--border);
+    }
+    
+    .form-help {
+        font-size: 0.85rem;
+        color: var(--text-light);
+        margin-top: 0.25rem;
+        font-style: italic;
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 2px solid #ef4444;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="page-header">
+        <h1 class="page-title">
+            {% if action == 'create' %}
+                <span>➕</span>
+            {% else %}
+                <span>✏️</span>
+            {% endif %}
+            {{ title }}
+        </h1>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label class="form-label required">Tên truyện</label>
+            <input 
+                type="text" 
+                name="title" 
+                class="form-input" 
+                value="{{ novel.title|default:'' }}"
+                required
+                placeholder="Nhập tên truyện..."
+            >
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Tác giả</label>
+            <input 
+                type="text" 
+                name="author" 
+                class="form-input" 
+                value="{{ novel.author|default:'' }}"
+                placeholder="Nhập tên tác giả..."
+            >
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Ngôn ngữ gốc</label>
+            <select name="language" class="form-select">
+                <option value="zh" {% if novel.language == 'zh' or not novel %}selected{% endif %}>Tiếng Trung (ZH)</option>
+                <option value="en" {% if novel.language == 'en' %}selected{% endif %}>Tiếng Anh (EN)</option>
+                <option value="ja" {% if novel.language == 'ja' %}selected{% endif %}>Tiếng Nhật (JA)</option>
+                <option value="ko" {% if novel.language == 'ko' %}selected{% endif %}>Tiếng Hàn (KO)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Mô tả</label>
+            <textarea 
+                name="description" 
+                class="form-textarea"
+                placeholder="Mô tả về truyện (tùy chọn)..."
+            >{{ novel.description|default:'' }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Phong cách dịch</label>
+            <textarea 
+                name="translation_style" 
+                class="form-textarea"
+                placeholder="Hướng dẫn phong cách dịch cho AI...&#10;&#10;Ví dụ:&#10;- Văn phong cổ trang, trang trọng&#10;- Giữ nguyên xưng hô như 'Tiểu tử', 'Lão phu'&#10;- Dịch tự nhiên, dễ hiểu"
+            >{{ novel.translation_style|default:'' }}</textarea>
+            <div class="form-help">
+                💡 AI sẽ sử dụng hướng dẫn này khi dịch các chapter
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                {% if action == 'create' %}
+                    ➕ Tạo Novel
+                {% else %}
+                    💾 Cập Nhật
+                {% endif %}
+            </button>
+            <a href="{% if novel %}{% url 'core:novel_detail' novel.id %}{% else %}{% url 'core:dashboard' %}{% endif %}" 
+               class="btn btn-secondary" style="flex: 1;">
+                ❌ Hủy
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

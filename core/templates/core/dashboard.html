@@ -120,42 +120,69 @@
         <span>📚</span>
         Danh sách Novels
     </h1>
-    <a href="{% url 'core:import_yaml' %}" class="btn btn-primary">
-        <span>📂</span>
-        Import YAML
-    </a>
+    <div>
+        <a href="{% url 'core:import_yaml' %}" class="btn btn-primary">
+            <span>📂</span>
+            Import YAML
+        </a>
+        <a href="{% url 'core:novel_create' %}" class="btn btn-success">
+            <span>➕</span>
+            Tạo Novel Mới
+        </a>
+    </div>
 </div>
 
 {% if novels %}
 <div class="novels-grid">
     {% for novel in novels %}
-    <a href="{% url 'core:novel_detail' novel.id %}" style="text-decoration: none;">
-        <div class="novel-card">
-            <div class="novel-title">
-                <span>📖</span>
-                {{ novel.title }}
-            </div>
-            <div class="novel-author">
-                <span>✍️</span>
-                {{ novel.author|default:"Unknown Author" }}
-            </div>
-            {% if novel.description %}
-            <div style="color: var(--text-light); font-size: 0.9rem; line-height: 1.5;">
-                {{ novel.description|truncatewords:20 }}
-            </div>
-            {% endif %}
-            <div class="novel-meta">
-                <div class="meta-item">
-                    <span>📚</span>
-                    {{ novel.volumes.count }} Volumes
+    <div style="position: relative;">
+        <a href="{% url 'core:novel_detail' novel.id %}" style="text-decoration: none;">
+            <div class="novel-card">
+                <div class="novel-title">
+                    <span>📖</span>
+                    {{ novel.title }}
                 </div>
-                <div class="meta-item">
-                    <span>🌐</span>
-                    {{ novel.language|upper }}
+                <div class="novel-author">
+                    <span>✍️</span>
+                    {{ novel.author|default:"Unknown Author" }}
+                </div>
+                {% if novel.description %}
+                <div style="color: var(--text-light); font-size: 0.9rem; line-height: 1.5;">
+                    {{ novel.description|truncatewords:20 }}
+                </div>
+                {% endif %}
+                <div class="novel-meta">
+                    <div class="meta-item">
+                        <span>📚</span>
+                        {{ novel.volumes.count }} Volumes
+                    </div>
+                    <div class="meta-item">
+                        <span>🌐</span>
+                        {{ novel.language|upper }}
+                    </div>
                 </div>
             </div>
+        </a>
+        <div style="position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem;">
+            <a href="{% url 'core:novel_edit' novel.id %}" 
+            class="btn btn-secondary" 
+            style="padding: 0.5rem 0.75rem; font-size: 0.85rem;"
+            onclick="event.stopPropagation();">
+                ✏️
+            </a>
+            <form method="post" action="{% url 'core:novel_delete' novel.id %}" 
+                style="display: inline;"
+                onclick="event.stopPropagation();"
+                onsubmit="return confirm('Xóa novel {{ novel.title }}?\n\n⚠️ Tất cả volumes, chapters sẽ bị xóa!');">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="btn" 
+                        style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background: var(--danger); color: white;">
+                    🗑️
+                </button>
+            </form>
         </div>
-    </a>
+    </div>
     {% endfor %}
 </div>
 {% else %}

@@ -143,13 +143,39 @@
 </div>
 
 <div class="volume-header">
-    <h1 class="volume-title">
-        📚 Volume {{ volume.index }}
-    </h1>
-    <div class="volume-subtitle">{{ volume.title|default:"Untitled" }}</div>
-    <div style="margin-top: 1rem; color: var(--text-light);">
-        <strong>{{ volume.chapters.count }}</strong> chapters
+    <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <h1 class="volume-title">
+                📚 Volume {{ volume.index }}
+            </h1>
+            <div class="volume-subtitle">{{ volume.title|default:"Untitled" }}</div>
+            <div style="margin-top: 1rem; color: var(--text-light);">
+                <strong>{{ volume.chapters.count }}</strong> chapters
+            </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'core:volume_edit' volume.id %}" class="btn btn-primary">
+                ✏️ Chỉnh Sửa
+            </a>
+            <form method="post" action="{% url 'core:volume_delete' volume.id %}" 
+                  style="display: inline;"
+                  onsubmit="return confirm('Xóa Volume {{ volume.index }}?\n\n⚠️ Tất cả chapters trong volume này sẽ bị xóa!');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    🗑️ Xóa Volume
+                </button>
+            </form>
+        </div>
     </div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--dark); margin: 0;">
+        📖 Chapters
+    </h2>
+    <a href="{% url 'core:chapter_create' volume.id %}" class="btn btn-primary">
+        ➕ Tạo Chapter
+    </a>
 </div>
 
 <div class="chapters-list">

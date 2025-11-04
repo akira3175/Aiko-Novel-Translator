@@ -45,4 +45,19 @@ urlpatterns = [
     path('novel/<int:novel_id>/review/stats/', views.review_stats_view, name='review_stats'),
     path('novel/<int:novel_id>/review/all/', views.review_all_chapters_view, name='review_all_chapters'),
     path('volume/<int:volume_id>/review/', views.review_volume_view, name='review_volume'),
+
+    # Novel CRUD
+    path('novel/create/', views.novel_create_view, name='novel_create'),
+    path('novel/<int:novel_id>/edit/', views.novel_edit_view, name='novel_edit'),
+    path('novel/<int:novel_id>/delete/', views.novel_delete_view, name='novel_delete'),
+    
+    # Volume CRUD
+    path('novel/<int:novel_id>/volume/create/', views.volume_create_view, name='volume_create'),
+    path('volume/<int:volume_id>/edit/', views.volume_edit_view, name='volume_edit'),
+    path('volume/<int:volume_id>/delete/', views.volume_delete_view, name='volume_delete'),
+    
+    # Chapter CRUD
+    path('volume/<int:volume_id>/chapter/create/', views.chapter_create_view, name='chapter_create'),
+    path('chapter/<int:chapter_id>/edit/', views.chapter_edit_view, name='chapter_edit'),
+    path('chapter/<int:chapter_id>/delete/', views.chapter_delete_view, name='chapter_delete'),
 ]
