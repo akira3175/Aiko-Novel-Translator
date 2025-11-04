@@ -1,91 +1,114 @@
-Aiko Novel Translator
+# Aiko Novel Translator
+
 Hệ thống dịch thuật tiểu thuyết tự động sử dụng AI (Gemini API), hỗ trợ chia segments, quản lý glossary và review chất lượng dịch.
 
-📋 Mục lục
+---
 
-Tính năng chính
-Công nghệ sử dụng
-Cài đặt
-Cấu trúc dự án
-Hướng dẫn sử dụng
-API Endpoints
-Workflow dịch thuật
-Database Schema
-Troubleshooting
+## 📋 Mục lục
 
+- [Tính năng chính](#-tính-năng-chính)
+- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
+- [Cài đặt](#-cài-đặt)
+- [Cấu trúc dự án](#-cấu-trúc-dự-án)
+- [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)
+- [API Endpoints](#-api-endpoints)
+- [Workflow dịch thuật](#-workflow-dịch-thuật)
+- [Database Schema](#-database-schema)
+- [Troubleshooting](#-troubleshooting)
 
-✨ Tính năng chính
-1. Quản lý Novel
+---
 
-✅ Tạo/sửa/xóa Novel, Volume, Chapter
-✅ Import/Export YAML (định dạng chuẩn với segments)
-✅ Hỗ trợ nhiều ngôn ngữ: Trung, Anh, Nhật, Hàn
-✅ Tùy chỉnh phong cách dịch cho từng novel
+## ✨ Tính năng chính
 
-2. Dịch thuật thông minh
+### 1. **Quản lý Novel**
+- ✅ Tạo/sửa/xóa Novel, Volume, Chapter
+- ✅ Import/Export YAML (định dạng chuẩn với segments)
+- ✅ Hỗ trợ nhiều ngôn ngữ: Trung, Anh, Nhật, Hàn
+- ✅ Tùy chỉnh phong cách dịch cho từng novel
 
-🤖 Dịch tự động bằng Gemini API (gemini-2.5-pro)
-📊 Chia chapter thành segments ~3000 từ để tối ưu context
-📖 Tham khảo chapters trước để giữ nhất quán
-🔄 Dịch lại chapter/segment khi cần
-✨ Hỗ trợ phong cách dịch tùy chỉnh (cổ trang, hiện đại, v.v.)
+### 2. **Dịch thuật thông minh**
+- 🤖 Dịch tự động bằng **Gemini API** (gemini-2.5-pro)
+- 📊 Chia chapter thành **segments ~3000 từ** để tối ưu context
+- 📖 Tham khảo **chapters trước** để giữ nhất quán
+- 🔄 Dịch lại chapter/segment khi cần
+- ✨ Hỗ trợ **phong cách dịch tùy chỉnh** (cổ trang, hiện đại, v.v.)
 
-3. Glossary tự động
+### 3. **Glossary tự động**
+- 🧠 Tạo glossary **tự động từ nội dung** (tên riêng, thuật ngữ)
+- 💾 **Checkpoint system** - tiếp tục từ nơi dừng lại
+- 🔍 Tìm kiếm, chỉnh sửa inline
+- 📤 Export/Import TXT
 
-🧠 Tạo glossary tự động từ nội dung (tên riêng, thuật ngữ)
-💾 Checkpoint system - tiếp tục từ nơi dừng lại
-🔍 Tìm kiếm, chỉnh sửa inline
-📤 Export/Import TXT
+### 4. **Phát hiện lỗi**
+- 🚨 **Foreign Character Detector** - cảnh báo ký tự Hán/Nhật/Hàn/Thái trong bản dịch
+- 🎨 Highlight ký tự ngoại ngữ trực quan
+- ⚠️ Cảnh báo theo mức độ nghiêm trọng (low/medium/high)
 
-4. Phát hiện lỗi
+### 5. **Review chất lượng**
+- 🧐 Review AI tự động cho điểm 0-100%
+- 📈 Thống kê chất lượng dịch theo chapter/volume/novel
+- 📝 Nhận xét chi tiết từ AI
 
-🚨 Foreign Character Detector - cảnh báo ký tự Hán/Nhật/Hàn/Thái trong bản dịch
-🎨 Highlight ký tự ngoại ngữ trực quan
-⚠️ Cảnh báo theo mức độ nghiêm trọng (low/medium/high)
+### 6. **API Key Management**
+- 🔑 Quản lý nhiều Gemini API keys trong database
+- 🔄 **Auto-rotation mỗi 1 tiếng** để tránh rate limit
+- 📊 Theo dõi usage count và last used time
 
-5. Review chất lượng
+---
 
-🧐 Review AI tự động cho điểm 0-100%
-📈 Thống kê chất lượng dịch theo chapter/volume/novel
-📝 Nhận xét chi tiết từ AI
+## 🛠 Công nghệ sử dụng
 
-6. API Key Management
+- **Backend**: Django 5.2+
+- **Database**: SQLite (có thể chuyển sang PostgreSQL)
+- **AI Provider**: Google Gemini API (2.5-pro & 2.5-flash)
+- **Cache**: Django Database Cache
+- **Frontend**: HTML/CSS/JavaScript (vanilla)
+- **Data Format**: YAML
 
-🔑 Quản lý nhiều Gemini API keys trong database
-🔄 Auto-rotation mỗi 1 tiếng để tránh rate limit
-📊 Theo dõi usage count và last used time
+---
 
+## 📦 Cài đặt
 
-🛠 Công nghệ sử dụng
+### 1. Clone repository
 
-Backend: Django 5.2+
-Database: SQLite (có thể chuyển sang PostgreSQL)
-AI Provider: Google Gemini API (2.5-pro & 2.5-flash)
-Cache: Django Database Cache
-Frontend: HTML/CSS/JavaScript (vanilla)
-Data Format: YAML
-
-
-📦 Cài đặt
-1. Clone repository
-bashgit clone <your-repo-url>
+```bash
+git clone <your-repo-url>
 cd novel_translator
-2. Tạo virtual environment
-bashpython -m venv venv
+```
+
+### 2. Tạo virtual environment
+
+```bash
+python -m venv venv
 
 # Windows
 venv\Scripts\activate
 
 # Linux/Mac
 source venv/bin/activate
-3. Cài đặt dependencies
-bashpip install -r requirements.txt
-4. Migrate database
-bashpython manage.py migrate
+```
+
+### 3. Cài đặt dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Migrate database
+
+```bash
+python manage.py migrate
 python manage.py createcachetable  # Tạo cache table cho key rotation
-5. Thêm Gemini API Keys
-bashpython manage.py shell
-pythonfrom core.models import APIKey
+```
+
+### 5. Thêm Gemini API Keys
+
+```bash
+python manage.py shell
+```
+
+```python
+from core.models import APIKey
 
 # Thêm key đầu tiên
 APIKey.objects.create(
@@ -102,8 +125,12 @@ APIKey.objects.create(
     name='Key 2',
     is_active=True
 )
-6. Chạy server
-bashpython manage.py runserver
+```
+
+### 6. Chạy server
+
+```bash
+python manage.py runserver
 ```
 
 Truy cập: `http://localhost:8000`
@@ -111,6 +138,7 @@ Truy cập: `http://localhost:8000`
 ---
 
 ## 📁 Cấu trúc dự án
+
 ```
 novel_translator/
 ├── core/
@@ -145,11 +173,17 @@ novel_translator/
 ├── requirements.txt
 ├── .gitignore
 └── README.md
+```
 
-📖 Hướng dẫn sử dụng
-1. Import Novel từ YAML
-Format YAML:
-yaml- id: Volume_1_Chapter_1_Segment_1
+---
+
+## 📖 Hướng dẫn sử dụng
+
+### 1. Import Novel từ YAML
+
+**Format YAML:**
+```yaml
+- id: Volume_1_Chapter_1_Segment_1
   title: "第一章"
   content: "原文内容..."
   title_translation: "Chương 1"
@@ -175,6 +209,7 @@ yaml- id: Volume_1_Chapter_1_Segment_1
 ### 3. Dịch Chapter
 
 **Workflow:**
+
 ```
 Chapter (content_raw) 
   → Chia Segments (~3000 từ)
@@ -299,9 +334,14 @@ POST /volume/<volume_id>/delete/
 POST /volume/<volume_id>/chapter/create/
 POST /chapter/<chapter_id>/edit/
 POST /chapter/<chapter_id>/delete/
+```
 
-🔄 Workflow dịch thuật
-mermaidgraph TD
+---
+
+## 🔄 Workflow dịch thuật
+
+```mermaid
+graph TD
     A[Chapter với content_raw] --> B{Có segments?}
     B -->|Không| C[Chia segments ~3000 từ]
     B -->|Có| D[Lấy Glossary]
@@ -318,21 +358,32 @@ mermaidgraph TD
     L -->|Chưa| G
     L -->|Rồi| M[Merge thành chapter.translation]
     M --> N[Tổng hợp warnings vào chapter]
+```
 
-💾 Database Schema
-Novel
-python- title: str
+---
+
+## 💾 Database Schema
+
+### Novel
+```python
+- title: str
 - author: str (optional)
 - description: text (chứa checkpoint: "checkpoint:123")
 - language: str (zh, en, ja, ko)
 - translation_style: text (hướng dẫn phong cách dịch)
 - created_at: datetime
-Volume
-python- novel: ForeignKey(Novel)
+```
+
+### Volume
+```python
+- novel: ForeignKey(Novel)
 - index: int (unique per novel)
 - title: str
-Chapter
-python- volume: ForeignKey(Volume)
+```
+
+### Chapter
+```python
+- volume: ForeignKey(Volume)
 - index: int (unique per volume)
 - title: str (tiêu đề gốc)
 - title_translation: str (tiêu đề dịch)
@@ -343,8 +394,11 @@ python- volume: ForeignKey(Volume)
 - review: text (nhận xét từ AI)
 - foreign_char_warning: text (cảnh báo ký tự ngoại ngữ)
 - updated_at: datetime
-Segment
-python- chapter: ForeignKey(Chapter)
+```
+
+### Segment
+```python
+- chapter: ForeignKey(Chapter)
 - index: int (unique per chapter)
 - content_raw: text (~3000 từ)
 - translation: text
@@ -352,30 +406,42 @@ python- chapter: ForeignKey(Chapter)
 - review: text
 - foreign_char_warning: text
 - updated_at: datetime
-Glossary
-python- novel: ForeignKey(Novel)
+```
+
+### Glossary
+```python
+- novel: ForeignKey(Novel)
 - term_cn: str (unique per novel)
 - term_vi: str
 - note: text
-APIKey
-python- provider: str (gemini, openai, anthropic)
+```
+
+### APIKey
+```python
+- provider: str (gemini, openai, anthropic)
 - key: str (unique)
 - name: str (tên gợi nhớ)
 - is_active: bool
 - usage_count: int
 - last_used: datetime
 - created_at: datetime
+```
 
-🔑 API Key Rotation
-Cơ chế hoạt động:
+---
 
-Database Cache: Lưu trữ current_key_index và last_switch_time
-Auto-rotation: Sau mỗi 1 tiếng (3600 giây), tự động chuyển sang key tiếp theo
-Round-robin: new_index = (current_index + 1) % total_keys
-Usage tracking: Mỗi lần dùng key, tăng usage_count và cập nhật last_used
+## 🔑 API Key Rotation
 
-Sử dụng:
-pythonfrom core.utils.gemini_client import get_gemini_client
+**Cơ chế hoạt động:**
+
+1. **Database Cache**: Lưu trữ `current_key_index` và `last_switch_time`
+2. **Auto-rotation**: Sau mỗi **1 tiếng (3600 giây)**, tự động chuyển sang key tiếp theo
+3. **Round-robin**: `new_index = (current_index + 1) % total_keys`
+4. **Usage tracking**: Mỗi lần dùng key, tăng `usage_count` và cập nhật `last_used`
+
+**Sử dụng:**
+
+```python
+from core.utils.gemini_client import get_gemini_client
 
 # Tự động lấy key hiện tại (và rotate nếu đã quá 1 tiếng)
 client = get_gemini_client()
@@ -387,23 +453,26 @@ client, key_id = manager.get_client()
 
 # Force rotate ngay (nếu bị rate limit)
 manager.force_rotate()
+```
 
-🎨 Foreign Character Detector
-Phát hiện:
+---
 
-🇨🇳 Chữ Hán: [\u4e00-\u9fff]
-🇰🇷 Chữ Hàn: [\uac00-\ud7af]
-🇯🇵 Chữ Nhật: [\u3040-\u30ff]
-🇹🇭 Chữ Thái: [\u0e00-\u0e7f]
+## 🎨 Foreign Character Detector
 
-Severity Levels:
+**Phát hiện:**
+- 🇨🇳 Chữ Hán: `[\u4e00-\u9fff]`
+- 🇰🇷 Chữ Hàn: `[\uac00-\ud7af]`
+- 🇯🇵 Chữ Nhật: `[\u3040-\u30ff]`
+- 🇹🇭 Chữ Thái: `[\u0e00-\u0e7f]`
 
-low: < 5 ký tự hoặc < 5% văn bản
-medium: 5-10% hoặc 5+ ký tự
-high: > 10% văn bản
+**Severity Levels:**
+- `low`: < 5 ký tự hoặc < 5% văn bản
+- `medium`: 5-10% hoặc 5+ ký tự
+- `high`: > 10% văn bản
 
-API:
-pythonfrom core.utils.foreign_char_detector import ForeignCharDetector
+**API:**
+```python
+from core.utils.foreign_char_detector import ForeignCharDetector
 
 # Phát hiện
 result = ForeignCharDetector.detect(text)
@@ -414,43 +483,63 @@ highlighted = ForeignCharDetector.highlight_html(text)
 
 # Kiểm tra có nên cảnh báo
 should_warn = ForeignCharDetector.should_warn(text, threshold=3)
+```
 
-🐛 Troubleshooting
-1. Lỗi "No API key found"
-Nguyên nhân: Chưa thêm Gemini API key vào database
-Giải pháp:
-bashpython manage.py shell
-pythonfrom core.models import APIKey
+---
+
+## 🐛 Troubleshooting
+
+### 1. Lỗi "No API key found"
+
+**Nguyên nhân**: Chưa thêm Gemini API key vào database
+
+**Giải pháp**:
+```bash
+python manage.py shell
+```
+```python
+from core.models import APIKey
 APIKey.objects.create(provider='gemini', key='YOUR_KEY', is_active=True)
-2. Lỗi "Rate limit exceeded"
-Nguyên nhân: Gemini API bị rate limit
-Giải pháp:
+```
 
-Thêm nhiều API keys để rotation tự động
-Giảm tần suất request
-Nâng cấp Gemini tier
+### 2. Lỗi "Rate limit exceeded"
 
-3. Segment quá dài (> 3000 từ)
-Nguyên nhân: Câu văn quá dài không thể chia nhỏ
-Giải pháp: SegmentProcessor tự động xử lý - câu quá dài sẽ tách riêng thành 1 segment
-4. Glossary không được áp dụng
-Nguyên nhân:
+**Nguyên nhân**: Gemini API bị rate limit
 
-Glossary chưa được tạo
-Term không khớp với nội dung
+**Giải pháp**:
+- Thêm nhiều API keys để rotation tự động
+- Giảm tần suất request
+- Nâng cấp Gemini tier
 
-Giải pháp:
+### 3. Segment quá dài (> 3000 từ)
 
-Chạy "Tạo Tự Động" glossary
-Kiểm tra term_cn có chính xác không
+**Nguyên nhân**: Câu văn quá dài không thể chia nhỏ
 
-5. Foreign char detector không hoạt động
-Nguyên nhân: Unicode range không đúng
-Giải pháp: Kiểm tra lại pattern trong foreign_char_detector.py
-6. Cache không hoạt động (key rotation fail)
-Nguyên nhân: Chưa tạo cache table
-Giải pháp:
-bashpython manage.py createcachetable
+**Giải pháp**: `SegmentProcessor` tự động xử lý - câu quá dài sẽ tách riêng thành 1 segment
+
+### 4. Glossary không được áp dụng
+
+**Nguyên nhân**: 
+- Glossary chưa được tạo
+- Term không khớp với nội dung
+
+**Giải pháp**:
+- Chạy "Tạo Tự Động" glossary
+- Kiểm tra term_cn có chính xác không
+
+### 5. Foreign char detector không hoạt động
+
+**Nguyên nhân**: Unicode range không đúng
+
+**Giải pháp**: Kiểm tra lại pattern trong `foreign_char_detector.py`
+
+### 6. Cache không hoạt động (key rotation fail)
+
+**Nguyên nhân**: Chưa tạo cache table
+
+**Giải pháp**:
+```bash
+python manage.py createcachetable
 ```
 
 ---
@@ -458,6 +547,7 @@ bashpython manage.py createcachetable
 ## 📝 Phong cách dịch (Translation Style)
 
 Mỗi novel có thể có hướng dẫn phong cách dịch riêng, ví dụ:
+
 ```
 Văn phong cổ trang, trang trọng
 Giữ nguyên xưng hô: Tiểu tử, Lão phu, Ta, Ngươi
@@ -489,25 +579,35 @@ DJANGO_SETTINGS_MODULE=novel_translator.settings
 SECRET_KEY=your-secret-key
 DEBUG=False
 ALLOWED_HOSTS=your-domain.com
-PythonAnywhere
+```
 
-Upload code
-Set up virtualenv
-Configure WSGI file
-Chạy migrations
+### PythonAnywhere
 
+1. Upload code
+2. Set up virtualenv
+3. Configure WSGI file
+4. Chạy migrations
 
-📄 License
+---
+
+## 📄 License
+
 MIT License
 
-👨‍💻 Author
-Aiko Team
+---
 
-🙏 Credits
+## 👨‍💻 Author
 
-Gemini API by Google
-Django Framework
-PyYAML
+**Aiko Team**
 
+---
 
-Happy Translating! 📚✨
+## 🙏 Credits
+
+- **Gemini API** by Google
+- **Django Framework**
+- **PyYAML**
+
+---
+
+**Happy Translating! 📚✨**
