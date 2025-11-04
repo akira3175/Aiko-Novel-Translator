@@ -598,7 +598,7 @@ MIT License
 
 ## 👨‍💻 Author
 
-**Aiko Team**
+**Akira**
 
 ---
 

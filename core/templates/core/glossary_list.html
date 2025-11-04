@@ -207,6 +207,87 @@
         gap: 1rem;
         margin-top: 1.5rem;
     }
+    
+    /* Inline editing styles */
+    .editable-cell {
+        cursor: pointer;
+        padding: 0.75rem;
+        transition: background 0.2s;
+        position: relative;
+    }
+    
+    .editable-cell:hover {
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .editable-cell::after {
+        content: '✏️';
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 0.8rem;
+    }
+    
+    .editable-cell:hover::after {
+        opacity: 0.5;
+    }
+    
+    .edit-input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 2px solid var(--primary);
+        border-radius: 4px;
+        font-size: 0.95rem;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    
+    .edit-input:focus {
+        outline: none;
+    }
+    
+    .edit-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .btn-save, .btn-cancel {
+        padding: 0.4rem 0.8rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-save {
+        background: var(--primary);
+        color: white;
+    }
+    
+    .btn-save:hover {
+        background: var(--secondary);
+    }
+    
+    .btn-cancel {
+        background: var(--border);
+        color: var(--text);
+    }
+    
+    .btn-cancel:hover {
+        background: var(--text-light);
+    }
+    
+    .saving-indicator {
+        display: inline-block;
+        margin-left: 0.5rem;
+        color: var(--primary);
+        font-size: 0.85rem;
+    }
 </style>
 {% endblock %}
 
@@ -289,21 +370,23 @@
         </thead>
         <tbody id="glossaryTableBody">
             {% for term in page_obj %}
-            <tr data-search="{{ term.term_cn|lower }} {{ term.term_vi|lower }}">
-                <td class="term-cn">{{ term.term_cn }}</td>
-                <td class="term-vi">{{ term.term_vi }}</td>
-                <td class="term-note">{{ term.note|default:"—" }}</td>
+            <tr data-search="{{ term.term_cn|lower }} {{ term.term_vi|lower }}" data-term-id="{{ term.id }}">
+                <td class="editable-cell term-cn" data-field="term_cn" onclick="editCell(this, event)">
+                    <span class="cell-value">{{ term.term_cn }}</span>
+                </td>
+                <td class="editable-cell term-vi" data-field="term_vi" onclick="editCell(this, event)">
+                    <span class="cell-value">{{ term.term_vi }}</span>
+                </td>
+                <td class="editable-cell term-note" data-field="note" onclick="editCell(this, event)">
+                    <span class="cell-value">{{ term.note|default:"—" }}</span>
+                </td>
                 <td>
-                    <form method="post" action="{% url 'core:delete_glossary_term' term.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button 
-                            type="submit" 
-                            class="btn-delete"
-                            onclick="return confirm('Xóa term này?')"
-                        >
-                            🗑️
-                        </button>
-                    </form>
+                    <button 
+                        class="btn-delete"
+                        onclick="deleteTerm({{ term.id }}, this)"
+                    >
+                        🗑️
+                    </button>
                 </td>
             </tr>
             {% empty %}
@@ -400,6 +483,7 @@
 
 <script>
 const novelId = {{ novel.id }};
+let currentEditingCell = null;
 
 function getCookie(name) {
     let value = "; " + document.cookie;
@@ -443,6 +527,172 @@ function updateFileName() {
     const input = document.getElementById('fileInput');
     const fileName = document.getElementById('fileName');
     fileName.textContent = input.files[0] ? input.files[0].name : '';
+}
+
+// Inline editing functions
+function editCell(cell, event) {
+    // Ngăn event bubbling
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    // Nếu đang edit cell khác, cancel nó
+    if (currentEditingCell && currentEditingCell !== cell) {
+        cancelEdit(currentEditingCell);
+    }
+    
+    // Nếu đang edit cell này, không làm gì
+    if (currentEditingCell === cell) {
+        return;
+    }
+    
+    // Nếu cell đang ở chế độ edit (có input), không làm gì
+    if (cell.querySelector('.edit-input')) {
+        return;
+    }
+    
+    const valueSpan = cell.querySelector('.cell-value');
+    const originalValue = valueSpan.textContent === '—' ? '' : valueSpan.textContent;
+    const field = cell.dataset.field;
+    
+    // Lưu giá trị gốc vào data attribute
+    cell.dataset.originalValue = originalValue;
+    
+    // Tạo input
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'edit-input';
+    input.value = originalValue;
+    
+    // Tạo action buttons
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'edit-actions';
+    
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-save';
+    saveBtn.textContent = '✓ Lưu';
+    saveBtn.onclick = (e) => {
+        e.stopPropagation();
+        saveEdit(cell, input.value);
+    };
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-cancel';
+    cancelBtn.textContent = '✗ Hủy';
+    cancelBtn.onclick = (e) => {
+        e.stopPropagation();
+        cancelEdit(cell);
+    };
+    
+    actionsDiv.appendChild(saveBtn);
+    actionsDiv.appendChild(cancelBtn);
+    
+    // Replace content
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    cell.appendChild(actionsDiv);
+    
+    // Focus input
+    input.focus();
+    input.select();
+    
+    // Save on Enter, cancel on Escape
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveEdit(cell, input.value);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cancelEdit(cell);
+        }
+    });
+    
+    // Ngăn input bị click trigger editCell lại
+    input.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+    
+    currentEditingCell = cell;
+}
+
+async function saveEdit(cell, newValue) {
+    const termId = cell.closest('tr').dataset.termId;
+    const field = cell.dataset.field;
+    const originalValueSpan = document.createElement('span');
+    originalValueSpan.className = 'cell-value';
+    
+    // Lưu giá trị cũ để restore nếu lỗi
+    const oldValue = cell.querySelector('.cell-value') ? 
+        cell.querySelector('.cell-value').textContent : '';
+    
+    // Hiển thị loading
+    cell.innerHTML = '<span class="saving-indicator">💾 Đang lưu...</span>';
+    
+    try {
+        const response = await fetch(`/novel/${novelId}/glossary/${termId}/update/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                field: field,
+                value: newValue
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.ok) {
+            throw new Error(data.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        // Hiển thị giá trị mới
+        originalValueSpan.textContent = newValue || '—';
+        cell.innerHTML = '';
+        cell.appendChild(originalValueSpan);
+        
+        // Flash effect
+        cell.style.background = 'rgba(34, 197, 94, 0.2)';
+        setTimeout(() => {
+            cell.style.background = '';
+        }, 500);
+        
+    } catch (error) {
+        console.error('Save error:', error);
+        
+        // Thử parse error message từ response
+        let errorMsg = error.message;
+        if (error.message.includes('HTTP error')) {
+            errorMsg = 'Không thể lưu. Có thể term này đã tồn tại hoặc vi phạm quy tắc.';
+        }
+        
+        alert('❌ ' + errorMsg);
+        
+        // Restore giá trị cũ
+        originalValueSpan.textContent = oldValue;
+        cell.innerHTML = '';
+        cell.appendChild(originalValueSpan);
+    }
+    
+    currentEditingCell = null;
+}
+
+function cancelEdit(cell) {
+    if (!cell) return;
+    
+    const valueSpan = document.createElement('span');
+    valueSpan.className = 'cell-value';
+    
+    // Lấy giá trị gốc từ data attribute
+    const originalValue = cell.dataset.originalValue || '—';
+    valueSpan.textContent = originalValue;
+    
+    // Restore
+    cell.innerHTML = '';
+    cell.appendChild(valueSpan);
+    
+    currentEditingCell = null;
 }
 
 async function importGlossary() {
@@ -542,6 +792,7 @@ async function resetCheckpoint() {
     }
 }
 
+
 function searchTerms() {
     const input = document.getElementById('searchInput');
     const filter = input.value.toLowerCase();
@@ -557,6 +808,62 @@ function searchTerms() {
     });
 }
 
+// Xóa term với AJAX
+async function deleteTerm(termId) {
+    if (!confirm('Xóa term này?')) return;
+    
+    // Lưu reference đến row trước khi xóa
+    const row = document.querySelector(`tr[data-term-id="${termId}"]`);
+    
+    try {
+        const response = await fetch(`/glossary/${termId}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        
+        if (response.ok) {
+            // Xóa row khỏi DOM
+            if (row) {
+                row.remove();
+            }
+            
+            // Cập nhật số lượng terms (kiểm tra element có tồn tại không)
+            const totalElement = document.getElementById('glossaryTotal');
+            if (totalElement) {
+                const currentTotal = parseInt(totalElement.textContent) || 0;
+                totalElement.textContent = Math.max(0, currentTotal - 1);
+            }
+            
+            // Đếm số rows còn lại
+            const tableBody = document.getElementById('glossaryTableBody');
+            if (!tableBody) return;
+            
+            const remainingRows = tableBody.querySelectorAll('tr[data-term-id]').length;
+            
+            if (remainingRows === 0) {
+                if (currentPage > 1) {
+                    // Nếu là trang cuối và không còn item nào, load lại trang trước
+                    loadGlossary(currentPage - 1, searchQuery);
+                } else {
+                    // Nếu là trang 1 và không còn gì, hiển thị empty state
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-light);">
+                                ${searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có glossary. Nhấn "Tạo Tự Động" để bắt đầu.'}
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        } else {
+            alert('Lỗi khi xóa term');
+        }
+    } catch (error) {
+        console.error('Error deleting term:', error);
+        alert('Lỗi: ' + error);
+    }
+}
+
 // Close modals when clicking outside
 document.getElementById('addModal').addEventListener('click', function(e) {
     if (e.target === this) hideAddModal();
@@ -564,6 +871,15 @@ document.getElementById('addModal').addEventListener('click', function(e) {
 
 document.getElementById('importModal').addEventListener('click', function(e) {
     if (e.target === this) hideImportModal();
+});
+
+// Cancel edit when clicking outside
+document.addEventListener('click', function(e) {
+    if (currentEditingCell && 
+        !currentEditingCell.contains(e.target) && 
+        !e.target.closest('.editable-cell')) {
+        cancelEdit(currentEditingCell);
+    }
 });
 </script>
 {% endblock %}

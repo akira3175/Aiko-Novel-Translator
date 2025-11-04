@@ -603,15 +603,41 @@ def update_glossary_term_view(request, novel_id, term_id):
         field = data.get('field')
         value = data.get('value', '').strip()
         
-        if field in ['term_cn', 'term_vi', 'note']:
-            setattr(term, field, value)
-            term.save()
-            return JsonResponse({'ok': True})
-        else:
+        if field not in ['term_cn', 'term_vi', 'note']:
             return JsonResponse({'ok': False, 'error': 'Invalid field'}, status=400)
+        
+        # Kiểm tra nếu sửa term_cn
+        if field == 'term_cn':
+            # Kiểm tra không được để trống
+            if not value:
+                return JsonResponse({'ok': False, 'error': 'Tiếng Trung không được để trống'}, status=400)
+            
+            # Kiểm tra trùng lặp (ngoại trừ chính nó)
+            existing = Glossary.objects.filter(
+                novel_id=novel_id,
+                term_cn=value
+            ).exclude(pk=term_id).first()
+            
+            if existing:
+                return JsonResponse({
+                    'ok': False, 
+                    'error': f'Term "{value}" đã tồn tại trong glossary'
+                }, status=400)
+        
+        # Kiểm tra nếu sửa term_vi
+        if field == 'term_vi' and not value:
+            return JsonResponse({'ok': False, 'error': 'Tiếng Việt không được để trống'}, status=400)
+        
+        # Cập nhật giá trị
+        setattr(term, field, value if value else None)
+        term.save()
+        
+        return JsonResponse({'ok': True})
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=400)
-
 
 # ==================== REVIEW VIEWS ====================
 

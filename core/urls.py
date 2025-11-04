@@ -38,7 +38,7 @@ urlpatterns = [
     path('novel/<int:novel_id>/glossary/generate/', views.generate_glossary_view, name='generate_glossary'),
     path('novel/<int:novel_id>/glossary/reset/', views.reset_glossary_checkpoint_view, name='reset_glossary_checkpoint'),
     path('novel/<int:novel_id>/glossary/add/', views.add_glossary_term_view, name='add_glossary_term'),
-    path('novel/<int:novel_id>/glossary/update/<int:term_id>/', views.update_glossary_term_view, name='update_glossary_term'),
+    path('novel/<int:novel_id>/glossary/<int:term_id>/update/', views.update_glossary_term_view, name='update_glossary_term'),
     path('glossary/<int:term_id>/delete/', views.delete_glossary_term_view, name='delete_glossary_term'),
     
     # Novel-level Review endpoints

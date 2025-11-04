@@ -12,7 +12,7 @@ def import_yaml_file(uploaded_file, novel_title="Chưa đặt tên"):
       translation: ...
     """
     data = yaml.safe_load(uploaded_file.read())
-    novel, _ = Novel.objects.get_or_create(title=novel_title)
+    novel, _ = Novel.objects.create(title=novel_title)
 
     imported_segments = 0
     imported_chapters = 0
