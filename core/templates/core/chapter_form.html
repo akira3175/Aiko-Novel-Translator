@@ -5,7 +5,7 @@
 {% block extra_css %}
 <style>
     .form-container {
-        max-width: 700px;
+        max-width: 900px;
         margin: 0 auto;
     }
     
@@ -15,6 +15,7 @@
         margin-bottom: 1.5rem;
         color: var(--text-light);
         font-size: 0.9rem;
+        flex-wrap: wrap;
     }
     
     .breadcrumb a {
@@ -23,9 +24,11 @@
     }
     
     .page-header {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        border-radius: 12px;
+        padding: 2rem;
         margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--border);
+        border-left: 4px solid var(--primary);
     }
     
     .page-title {
@@ -35,14 +38,27 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        margin: 0;
     }
     
-    .novel-info {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    .volume-info {
+        background: white;
+        border: 2px solid var(--border);
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 2rem;
-        border-left: 4px solid var(--primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .volume-info-text {
+        font-size: 0.95rem;
+        color: var(--text);
+    }
+    
+    .volume-info-text strong {
+        color: var(--dark);
     }
     
     .form-group {
@@ -62,18 +78,33 @@
         color: var(--danger);
     }
     
-    .form-input {
+    .form-input,
+    .form-textarea {
         width: 100%;
         padding: 0.75rem;
         border: 2px solid var(--border);
         border-radius: 8px;
         font-size: 1rem;
         transition: border-color 0.2s;
+        font-family: inherit;
     }
     
-    .form-input:focus {
+    .form-input:focus,
+    .form-textarea:focus {
         outline: none;
         border-color: var(--primary);
+    }
+    
+    .form-textarea {
+        min-height: 150px;
+        line-height: 1.6;
+        resize: vertical;
+    }
+    
+    .form-textarea.large {
+        min-height: 400px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.95rem;
     }
     
     .form-help {
@@ -81,6 +112,13 @@
         color: var(--text-light);
         margin-top: 0.25rem;
         font-style: italic;
+    }
+    
+    .char-count {
+        text-align: right;
+        font-size: 0.85rem;
+        color: var(--text-light);
+        margin-top: 0.25rem;
     }
     
     .form-actions {
@@ -102,6 +140,28 @@
         color: #991b1b;
         border: 2px solid #ef4444;
     }
+    
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 2px solid #10b981;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -111,6 +171,8 @@
         <a href="/">Dashboard</a>
         <span>/</span>
         <a href="{% url 'core:novel_detail' volume.novel.id %}">{{ volume.novel.title }}</a>
+        <span>/</span>
+        <a href="{% url 'core:volume_detail' volume.id %}">Volume {{ volume.index }}</a>
         <span>/</span>
         <span>{{ title }}</span>
     </div>
@@ -126,8 +188,12 @@
         </h1>
     </div>
     
-    <div class="novel-info">
-        <strong>📖 Novel:</strong> {{ volume.novel.title }}
+    <div class="volume-info">
+        <div class="volume-info-text">
+            <strong>📖 Novel:</strong> {{ volume.novel.title }} 
+            <span style="margin: 0 0.5rem;">•</span>
+            <strong>📚 Volume:</strong> {{ volume.index }}{% if volume.title %} - {{ volume.title }}{% endif %}
+        </div>
     </div>
     
     {% if messages %}
@@ -141,49 +207,131 @@
     <form method="post">
         {% csrf_token %}
         
-        <div class="form-group">
-            <label class="form-label required">Số thứ tự Volume</label>
-            <input 
-                type="number" 
-                name="index" 
-                class="form-input" 
-                value="{% if volume %}{{ volume.index }}{% else %}{{ next_index }}{% endif %}"
-                min="1"
-                required
-                placeholder="Nhập số thứ tự..."
-            >
-            <div class="form-help">
-                💡 Gợi ý: Volume tiếp theo là số {{ next_index|default:1 }}
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label required">Số thứ tự Chapter</label>
+                <input 
+                    type="number" 
+                    name="index" 
+                    class="form-input" 
+                    value="{% if chapter %}{{ chapter.index }}{% else %}{{ next_index }}{% endif %}"
+                    min="1"
+                    required
+                    placeholder="1"
+                >
+                <div class="form-help">
+                    💡 Chapter tiếp theo: {{ next_index|default:1 }}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label required">Tiêu đề (Nguyên văn)</label>
+                <input 
+                    type="text" 
+                    name="title" 
+                    class="form-input" 
+                    value="{{ chapter.title|default:'' }}"
+                    required
+                    placeholder="Nhập tiêu đề chapter..."
+                >
+                <div class="form-help">
+                    💡 Ví dụ: 第一章：开始, Chapter 1...
+                </div>
             </div>
         </div>
         
         <div class="form-group">
-            <label class="form-label">Tiêu đề Volume</label>
+            <label class="form-label">Tiêu đề (Bản dịch)</label>
             <input 
                 type="text" 
-                name="title" 
+                name="title_translation" 
                 class="form-input" 
-                value="{{ volume.title|default:'' }}"
-                placeholder="Nhập tiêu đề volume (tùy chọn)..."
+                value="{{ chapter.title_translation|default:'' }}"
+                placeholder="Nhập bản dịch tiêu đề (tùy chọn)..."
             >
             <div class="form-help">
-                💡 Ví dụ: "Khởi đầu hành trình", "Tập 1"...
+                💡 Nếu để trống, AI sẽ tự động dịch khi bạn dịch chapter
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label required">Nội dung nguyên văn</label>
+            <textarea 
+                name="content_raw" 
+                class="form-textarea large" 
+                required
+                placeholder="Dán nội dung chapter (nguyên văn Trung Quốc) vào đây...&#10;&#10;Ví dụ:&#10;第一章&#10;&#10;这是第一段...&#10;这是第二段..."
+                id="contentTextarea"
+            >{{ chapter.content_raw|default:'' }}</textarea>
+            <div class="char-count">
+                <span id="charCount">0</span> ký tự
+            </div>
+            <div class="form-help">
+                💡 Copy/paste toàn bộ nội dung chapter vào đây. Hệ thống sẽ tự động chia thành segments khi dịch.
             </div>
         </div>
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary" style="flex: 1;">
                 {% if action == 'create' %}
-                    ➕ Tạo Volume
+                    ➕ Tạo Chapter
                 {% else %}
                     💾 Cập Nhật
                 {% endif %}
             </button>
-            <a href="{% if volume %}{% url 'core:volume_detail' volume.id %}{% else %}{% url 'core:novel_detail' novel.id %}{% endif %}" 
+            <a href="{% if chapter %}{% url 'core:chapter_detail' chapter.id %}{% else %}{% url 'core:volume_detail' volume.id %}{% endif %}" 
                class="btn btn-secondary" style="flex: 1;">
                 ❌ Hủy
             </a>
         </div>
     </form>
 </div>
+
+<script>
+// Character counter
+const textarea = document.getElementById('contentTextarea');
+const charCount = document.getElementById('charCount');
+
+function updateCharCount() {
+    const count = textarea.value.length;
+    charCount.textContent = count.toLocaleString();
+}
+
+textarea.addEventListener('input', updateCharCount);
+updateCharCount();
+
+// Auto-save to localStorage (optional)
+const formKey = 'chapter_form_draft_{{ volume.id }}';
+
+// Load draft on page load
+const draft = localStorage.getItem(formKey);
+if (draft && !textarea.value) {
+    if (confirm('Phát hiện bản nháp chưa lưu. Bạn có muốn khôi phục?')) {
+        const data = JSON.parse(draft);
+        document.querySelector('[name="title"]').value = data.title || '';
+        document.querySelector('[name="title_translation"]').value = data.title_translation || '';
+        textarea.value = data.content_raw || '';
+        updateCharCount();
+    }
+}
+
+// Save draft on input
+let saveTimeout;
+textarea.addEventListener('input', () => {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        const formData = {
+            title: document.querySelector('[name="title"]').value,
+            title_translation: document.querySelector('[name="title_translation"]').value,
+            content_raw: textarea.value
+        };
+        localStorage.setItem(formKey, JSON.stringify(formData));
+    }, 1000);
+});
+
+// Clear draft on successful submit
+document.querySelector('form').addEventListener('submit', () => {
+    localStorage.removeItem(formKey);
+});
+</script>
 {% endblock %}
