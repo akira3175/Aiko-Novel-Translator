@@ -431,6 +431,99 @@
             flex-direction: column;
         }
     }
+
+        .copy-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .copy-button.copied::after {
+        content: '✓ Đã copy!';
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--success);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        animation: fadeInOut 2s ease-in-out;
+        pointer-events: none;
+    }
+    
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(5px); }
+        10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+    }
+    
+    .copy-section {
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .copy-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .copy-section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .copy-options {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .copy-preview {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.8;
+        color: var(--text);
+        font-size: 0.95rem;
+        display: none;
+    }
+    
+    .copy-preview.show {
+        display: block;
+    }
+    
+    .copy-stats {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-light);
+    }
+    
+    .copy-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
 </style>
 {% endblock %}
 
@@ -547,6 +640,49 @@
         </form>
     </div>
 </div>
+
+{% if chapter.translation %}
+<div class="copy-section">
+    <div class="copy-section-header">
+        <div class="copy-section-title">
+            📋 Sao chép bản dịch
+        </div>
+        <div class="copy-options">
+            <button onclick="copyTranslation('full')" class="btn btn-primary copy-button" id="copyFullBtn">
+                📄 Copy Toàn Bộ
+            </button>
+            <button onclick="copyTranslation('title-only')" class="btn btn-secondary copy-button" id="copyTitleBtn">
+                📌 Copy Tiêu Đề
+            </button>
+            <button onclick="copyTranslation('content-only')" class="btn btn-secondary copy-button" id="copyContentBtn">
+                📝 Copy Nội Dung
+            </button>
+            <button onclick="togglePreview()" class="btn btn-secondary" id="previewBtn">
+                👁️ Xem Trước
+            </button>
+        </div>
+    </div>
+    
+    <div class="copy-stats">
+        <div class="copy-stat">
+            <span>📊</span>
+            <span id="wordCount">{{ chapter.translation|length }}</span> ký tự
+        </div>
+        <div class="copy-stat">
+            <span>📖</span>
+            <span>{{ segments.count }}</span> segments
+        </div>
+        {% if chapter.match_percent %}
+        <div class="copy-stat">
+            <span>✨</span>
+            <span>{{ chapter.match_percent|floatformat:0 }}%</span> chất lượng
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="copy-preview" id="copyPreview"></div>
+</div>
+{% endif %}
 
 {% if progress %}
 <div class="progress-section">
@@ -692,6 +828,82 @@
 <script>
 const chapterId = {{ chapter.id }};
 const novelId = {{ chapter.volume.novel.id }};
+
+async function copyTranslation(type) {
+    const titleTranslation = `{{ chapter.title_translation|default:chapter.title|escapejs }}`;
+    const contentTranslation = `{{ chapter.translation|escapejs }}`;
+    
+    let textToCopy = '';
+    let buttonId = '';
+    
+    switch(type) {
+        case 'full':
+            textToCopy = `${titleTranslation}\n\n${contentTranslation}`;
+            buttonId = 'copyFullBtn';
+            break;
+        case 'title-only':
+            textToCopy = titleTranslation;
+            buttonId = 'copyTitleBtn';
+            break;
+        case 'content-only':
+            textToCopy = contentTranslation;
+            buttonId = 'copyContentBtn';
+            break;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(textToCopy);
+        showCopySuccess(buttonId);
+    } catch (err) {
+        // Fallback for older browsers
+        fallbackCopyTextToClipboard(textToCopy, buttonId);
+    }
+}
+
+function showCopySuccess(buttonId) {
+    const button = document.getElementById(buttonId);
+    button.classList.add('copied');
+    
+    setTimeout(() => {
+        button.classList.remove('copied');
+    }, 2000);
+}
+
+function fallbackCopyTextToClipboard(text, buttonId) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.top = "-9999px";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showCopySuccess(buttonId);
+    } catch (err) {
+        alert('❌ Không thể copy. Vui lòng thử lại.');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function togglePreview() {
+    const preview = document.getElementById('copyPreview');
+    const btn = document.getElementById('previewBtn');
+    
+    if (preview.classList.contains('show')) {
+        preview.classList.remove('show');
+        btn.textContent = '👁️ Xem Trước';
+    } else {
+        const titleTranslation = `{{ chapter.title_translation|default:chapter.title|escapejs }}`;
+        const contentTranslation = `{{ chapter.translation|escapejs }}`;
+        preview.textContent = `${titleTranslation}\n\n${contentTranslation}`;
+        preview.classList.add('show');
+        btn.textContent = '🙈 Ẩn';
+    }
+}
 
 function getCookie(name) {
     let value = "; " + document.cookie;
