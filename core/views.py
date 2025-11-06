@@ -111,10 +111,8 @@ def translate_segment_view(request, segment_id):
     """
     segment = get_object_or_404(Segment, pk=segment_id)
     
-    # Kiểm tra xem có force re-translate không
     force_retranslate = request.POST.get('force', 'false') == 'true'
     
-    # Nếu đã dịch và không force, báo lỗi
     if segment.translation and not force_retranslate:
         return JsonResponse({
             'ok': False,
@@ -139,10 +137,13 @@ def translate_segment_view(request, segment_id):
         # Lấy phong cách dịch nếu có
         translation_style = novel.translation_style or ""
         
+        # ✅ THÊM TIÊU ĐỀ VÀO SOURCE_TEXT
+        source_text = f"{chapter.title}\n\n{segment.content_raw}"
+        
         # Gọi AI để dịch
         from .utils.gemini_client import translate_with_gemini
         title_trans, content_trans = translate_with_gemini(
-            source_text=segment.content_raw,
+            source_text=source_text,  # ✅ Đã có tiêu đề
             glossary_context=glossary_context,
             pre_chapters=pre_chapters,
             translation_style=translation_style
@@ -188,7 +189,6 @@ def translate_segment_view(request, segment_id):
             'error': str(e)
         }, status=400)
 
-
 @require_POST
 def translate_chapter_auto_view(request, chapter_id):
     """
@@ -199,7 +199,6 @@ def translate_chapter_auto_view(request, chapter_id):
     
     force_retranslate = request.POST.get('force', 'false') == 'true'
     
-    # Kiểm tra nếu đã dịch và không force
     if chapter.translation and not force_retranslate:
         return JsonResponse({
             'ok': False,
@@ -221,8 +220,6 @@ def translate_chapter_auto_view(request, chapter_id):
         ])
         
         pre_chapters = _get_previous_chapters_context(chapter, limit=3)
-
-        # Lấy phong cách dịch nếu có
         translation_style = novel.translation_style or ""
         
         # Bước 3: Dịch từng segment
@@ -232,12 +229,14 @@ def translate_chapter_auto_view(request, chapter_id):
         foreign_warnings = []
         
         for segment in chapter.segments.all():
-            # Bỏ qua segment đã dịch nếu không force
             if segment.translation and not force_retranslate:
                 continue
             
+            # ✅ THÊM TIÊU ĐỀ CHO SEGMENT ĐẦU TIÊN
+            source_text = f"{chapter.title}\n\n{segment.content_raw}"
+            
             title_trans, content_trans = translate_with_gemini(
-                source_text=segment.content_raw,
+                source_text=source_text,  # ✅ Đã có tiêu đề
                 glossary_context=glossary_context,
                 pre_chapters=pre_chapters,
                 translation_style=translation_style
@@ -246,8 +245,7 @@ def translate_chapter_auto_view(request, chapter_id):
             segment.translation = content_trans
             
             # Lưu tiêu đề vào CHAPTER cho segment đầu tiên
-            if segment.index == 1 and title_trans:
-                chapter.title_translation = title_trans
+            chapter.title_translation = title_trans
             
             # Phát hiện ký tự ngoại ngữ
             detection = ForeignCharDetector.detect(content_trans)
@@ -286,7 +284,6 @@ def translate_chapter_auto_view(request, chapter_id):
             'ok': False,
             'error': str(e)
         }, status=400)
-
 
 def _get_previous_chapters_context(chapter: Chapter, limit: int = 3) -> str:
     """
